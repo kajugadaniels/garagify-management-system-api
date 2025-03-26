@@ -105,16 +105,11 @@ class Quotation(models.Model):
     def __str__(self):
         return f"Vehicle ({self.vehicle.model}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
 
-class QuotationItem(models.Model):
+class Inventory(models.Model):
     ITEM_TYPES = (
         ('Spare Part', 'Spare Part'),
         ('Tools', 'Tools'),
         ('Materials', 'Materials'),
-    )
-
-    quotation = models.ForeignKey(
-        Quotation,
-        on_delete=models.CASCADE,
     )
     item_name = models.CharField(max_length=255, null=True, blank=True)
     item_type = models.CharField(max_length=30, choices=ITEM_TYPES, null=True, blank=True)
@@ -132,4 +127,37 @@ class QuotationItem(models.Model):
         verbose_name_plural = "Quotation of Item"
 
     def __str__(self):
-        return f"Vehicle ({self.vehicle.model}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+        return f"Inventory ({self.item_name}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+
+class QuotationItem(models.Model):
+    ITEM_TYPES = (
+        ('Spare Part', 'Spare Part'),
+        ('Tools', 'Tools'),
+        ('Materials', 'Materials'),
+    )
+
+    quotation = models.ForeignKey(
+        Quotation,
+        on_delete=models.CASCADE,
+    )
+
+    item = models.ForeignKey(
+        Inventory,
+        on_delete=models.CASCADE,
+    )
+    quantity = models.PositiveIntegerField(max_length=255, null=True, blank=True)
+    unit_price = models.PositiveIntegerField(max_length=255, null=True, blank=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="quotations_created_by"
+    )
+    created_at = models.DateField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = "Quotation of Item"
+
+    def __str__(self):
+        return f"Quotation item ({self.item.item_name}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
