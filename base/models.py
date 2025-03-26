@@ -20,6 +20,26 @@ class Vehicle(models.Model):
     def __str__(self):
         return f"Vehicle({self.model}) by ({self.customer.name}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
 
+class VehicleCheckIn(models.Model):
+    vehicle = models.ForeignKey(
+        Vehicle,
+        on_delete=models.CASCADE,
+    )
+    received_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+    )
+    arrival_date = models.DateField(default=timezone.now)
+    created_at = models.DateField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = "Vehicles Issues"
+
+    def __str__(self):
+        return f"Vehicle ({self.vehicle.model}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+
+
 class VehicleIssue(models.Model):
     vehicle = models.ForeignKey(
         Vehicle,
