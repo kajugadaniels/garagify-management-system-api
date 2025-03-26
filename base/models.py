@@ -71,3 +71,36 @@ class VehicleIssue(models.Model):
 
     def __str__(self):
         return f"Vehicle ({self.vehicle.model}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+
+
+class Quotation(models.Model):
+    STATUS_CHOICES = (
+        ('Pending', 'Pending'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+    )
+
+    vehicle = models.ForeignKey(
+        Vehicle,
+        on_delete=models.CASCADE,
+    )
+    mechanic = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="quotations_by_mechanic"
+    )
+    total_cost = models.CharField(max_length=255, null=True, blank=True)
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="Pending", null=True, blank=True)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="quotations_created_by"
+    )
+    created_at = models.DateField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = "Quotations"
+
+    def __str__(self):
+        return f"Vehicle ({self.vehicle.model}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
