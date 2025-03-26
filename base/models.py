@@ -39,6 +39,18 @@ class VehicleCheckIn(models.Model):
     def __str__(self):
         return f"Vehicle ({self.vehicle.model}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
 
+class VehicleNoteProperty(models.Model):
+    vehicle_check_in = models.ForeignKey(
+        VehicleCheckIn,
+        on_delete=models.CASCADE,
+    )
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        verbose_name_plural = "Vehicle Note Properties"
+
+    def __str__(self):
+        return self.name
 
 class VehicleIssue(models.Model):
     vehicle = models.ForeignKey(
