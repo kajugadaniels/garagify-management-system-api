@@ -113,12 +113,11 @@ class Inventory(models.Model):
     )
     item_name = models.CharField(max_length=255, null=True, blank=True)
     item_type = models.CharField(max_length=30, choices=ITEM_TYPES, null=True, blank=True)
-    quantity = models.PositiveIntegerField(max_length=255, null=True, blank=True)
-    unit_price = models.PositiveIntegerField(max_length=255, null=True, blank=True)
+    quantity = models.CharField(max_length=255, null=True, blank=True)
+    unit_price = models.CharField(max_length=255, null=True, blank=True)
     created_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="quotations_created_by"
     )
     created_at = models.DateField(default=timezone.now)
 
@@ -145,12 +144,11 @@ class QuotationItem(models.Model):
         Inventory,
         on_delete=models.CASCADE,
     )
-    quantity = models.PositiveIntegerField(max_length=255, null=True, blank=True)
-    unit_price = models.PositiveIntegerField(max_length=255, null=True, blank=True)
+    quantity = models.CharField(max_length=255, null=True, blank=True)
+    unit_price = models.CharField(max_length=255, null=True, blank=True)
     created_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="quotations_created_by"
     )
     created_at = models.DateField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
