@@ -2,9 +2,10 @@ import random
 import string
 from base.models import *
 from base.serializers import *
+from django.conf import settings
+from django.core.mail import send_mail
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.contrib.auth.hashers import make_password
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics, permissions, status
 from rest_framework.exceptions import NotFound, ValidationError
@@ -35,9 +36,40 @@ class AddUser(APIView):
         characters = string.ascii_letters + string.digits
         return ''.join(random.choice(characters) for _ in range(length))
 
+    def send_welcome_email(self, user, password):
+        """
+        Sends a welcome email to the user including their password in plaintext.
+        """
+        subject = "Welcome to Our Service!"
+        message = f"""
+        Hello {user.name},
+
+        Welcome to our service! You have been successfully registered.
+
+        Here are your details:
+        Name: {user.name}
+        Email: {user.email}
+        Phone Number: {user.phone_number}
+        Role: {user.role}
+
+        Your temporary password is: {password}
+
+        Please change your password after logging in for the first time.
+
+        Best regards,
+        The Team
+        """
+
+        from_email = settings.DEFAULT_FROM_EMAIL  # Configure this in settings.py
+        recipient_list = [user.email]
+        
+        # Send the email
+        send_mail(subject, message, from_email, recipient_list)
+
     def post(self, request, *args, **kwargs):
         """
-        Registers a new user, automatically generates a username and a password.
+        Registers a new user, automatically generates a username and a password, 
+        and sends a welcome email to the user.
         """
         data = request.data.copy()
 
@@ -54,12 +86,15 @@ class AddUser(APIView):
             # Save the user, which will auto-generate the username and hash the password
             user = serializer.save()
 
+            # Send the welcome email to the user with plaintext password
+            self.send_welcome_email(user, password)
+
             # We don't send the password back in the response for security reasons
             user_data = serializer.data
             user_data.pop('password', None)
 
             return Response({
-                "detail": "User registered successfully.",
+                "detail": "User registered successfully. A welcome email has been sent.",
                 "data": user_data
             }, status=status.HTTP_201_CREATED)
         
