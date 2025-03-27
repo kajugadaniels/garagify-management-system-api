@@ -9,7 +9,7 @@ urlpatterns = [
     path('inventories/', GetInventory.as_view(), name='GetInventory'),
     path('inventory/add/', AddInventory.as_view(), name='AddInventory'),
     path('inventory/<int:pk>/', InventoryDetails.as_view(), name='InventoryDetails'),
-    # path('inventory/<int:pk>/update/', UpdateIInventory.as_view(), name='UpdateIInventory'),
+    path('inventory/<int:pk>/update/', UpdateInventory.as_view(), name='UpdateInventory'),
     # path('inventory/<int:pk>/delete/', DeleteIInventory.as_view(), name='DeleteIInventory'),
 ] 
 

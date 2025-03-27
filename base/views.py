@@ -3,8 +3,8 @@ from base.serializers import *
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.exceptions import NotFound
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound, ValidationError
 
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
@@ -73,5 +73,42 @@ class InventoryDetails(APIView):
         except Exception as e:
             return Response({
                 "detail": "An error occurred while retrieving the inventory details.",
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UpdateInventory(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk, *args, **kwargs):
+        """
+        Updates an existing inventory item based on the provided data.
+        """
+        try:
+            # Retrieve the inventory item by its primary key (pk)
+            inventory = Inventory.objects.get(pk=pk)
+            
+            # Pass the request data along with the instance (inventory) to the serializer
+            serializer = InventorySerializer(inventory, data=request.data, partial=False)  # partial=False means all fields must be provided
+            
+            if serializer.is_valid():
+                # Save the updated inventory item
+                updated_inventory = serializer.save()
+                return Response({
+                    "detail": "Inventory item updated successfully.",
+                    "data": InventorySerializer(updated_inventory).data
+                }, status=status.HTTP_200_OK)
+            else:
+                raise ValidationError(detail="Invalid data provided for inventory update.", errors=serializer.errors)
+
+        except Inventory.DoesNotExist:
+            raise NotFound(detail="Inventory item not found.")
+        except ValidationError as e:
+            return Response({
+                "detail": "Inventory update failed due to validation errors.",
+                "errors": e.detail
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                "detail": "An error occurred while updating the inventory item.",
                 "error": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
