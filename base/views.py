@@ -3,6 +3,7 @@ from base.serializers import *
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.contrib.auth.hashers import make_password
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound, ValidationError
 
@@ -25,10 +26,28 @@ class AddUser(APIView):
 
     def post(self, request, *args, **kwargs):
         """
-        Registers a new user and automatically generates a username.
+        Registers a new user, automatically generates a username, and sets a default password.
         """
+        # Copy request data and validate the passwords
         data = request.data.copy()
-        serializer = UserSerializer(data=data, context={'request': request})
+        
+        # Check if the passwords match
+        password = data.get("password")
+        confirm_password = data.get("confirm_password")
+        
+        if password != confirm_password:
+            raise ValidationError({"detail": "Passwords do not match."})
+
+        # Set default password if not provided
+        if not password:
+            password = "defaultPassword123"  # Default password if not provided
+        
+        # Hash the password before saving it
+        data["password"] = make_password(password)
+        data["confirm_password"] = None  # We don't need to save the confirm_password
+
+        # Serialize the data and create user
+        serializer = UserSerializer(data=data)
         
         if serializer.is_valid():
             # Save the user, which will auto-generate the username
