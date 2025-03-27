@@ -84,6 +84,8 @@ class PasswordResetRequestView(APIView):
     """
     Initiate the password reset process by sending a 5-digit OTP to the user's email address.
     """
+    permission_classes = [permissions.AllowAny]
+
     def post(self, request, *args, **kwargs):
         serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
@@ -110,6 +112,8 @@ class PasswordResetConfirmView(APIView):
     Confirm the password reset by validating the OTP and setting the new password.
     After successfully resetting the password, sends a confirmation email to the user.
     """
+    permission_classes = [permissions.AllowAny]
+
     def post(self, request, *args, **kwargs):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         if serializer.is_valid():
