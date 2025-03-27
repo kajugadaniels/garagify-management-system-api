@@ -10,18 +10,20 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework import generics, permissions, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
-class LoginView(GenericAPIView):
+class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = LoginSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)  # Use get_serializer method
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        identifier = serializer.validated_data['identifier']
+        # Extract validated user and password
+        user = serializer.validated_data['user']
         password = serializer.validated_data['password']
 
-        user = authenticate(username=identifier, password=password)
+        # Authenticate user
+        user = authenticate(username=user.username, password=password)
 
         if user:
             # Delete old token and generate a new one
@@ -33,7 +35,8 @@ class LoginView(GenericAPIView):
                 'user': UserSerializer(user).data,  # Use your user serializer if needed
                 'message': 'Login successful.'
             }, status=status.HTTP_200_OK)
-        return Response({'error': 'Invalid identifier(email, username, phone_number) or password.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'error': 'Invalid identifier (email, username, phone number) or password.'}, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
