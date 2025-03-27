@@ -10,7 +10,7 @@ urlpatterns = [
     path('inventory/add/', AddInventory.as_view(), name='AddInventory'),
     path('inventory/<int:pk>/', InventoryDetails.as_view(), name='InventoryDetails'),
     path('inventory/<int:pk>/update/', UpdateInventory.as_view(), name='UpdateInventory'),
-    # path('inventory/<int:pk>/delete/', DeleteIInventory.as_view(), name='DeleteIInventory'),
+    path('inventory/<int:pk>/delete/', DeleteInventory.as_view(), name='DeleteInventory'),
 ] 
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -114,3 +114,29 @@ class UpdateInventory(APIView):
                 "detail": "An error occurred while updating the inventory item.",
                 "error": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class DeleteInventory(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk, *args, **kwargs):
+        """
+        Deletes an existing inventory item based on the provided pk.
+        """
+        try:
+            # Retrieve the inventory item by its primary key (pk)
+            inventory = Inventory.objects.get(pk=pk)
+            
+            # Delete the inventory item
+            inventory.delete()
+            
+            return Response({
+                "detail": "Inventory item deleted successfully."
+            }, status=status.HTTP_204_NO_CONTENT)
+        
+        except Inventory.DoesNotExist:
+            raise NotFound(detail="Inventory item not found.")
+        except Exception as e:
+            return Response({
+                "detail": "An error occurred while deleting the inventory item.",
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
