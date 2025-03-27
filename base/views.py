@@ -83,8 +83,12 @@ class AddUser(APIView):
         serializer = UserSerializer(data=data, context={'request': request})
         
         if serializer.is_valid():
-            # Save the user, which will auto-generate the username and hash the password
+            # Save the user, which will auto-generate the username
             user = serializer.save()
+
+            # Set the raw password and hash it correctly
+            user.set_password(password)  # This hashes the password before saving
+            user.save()
 
             # Send the welcome email to the user with plaintext password
             self.send_welcome_email(user, password)
