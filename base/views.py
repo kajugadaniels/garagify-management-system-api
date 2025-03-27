@@ -60,10 +60,10 @@ class AddUser(APIView):
         The Team
         """
 
-        from_email = settings.DEFAULT_FROM_EMAIL  # Configure this in settings.py
+        from_email = settings.DEFAULT_FROM_EMAIL  # Make sure this is set in your settings.py
         recipient_list = [user.email]
         
-        # Send the email
+        # Send the email using the same logic as PasswordResetRequestView
         send_mail(subject, message, from_email, recipient_list)
 
     def post(self, request, *args, **kwargs):
