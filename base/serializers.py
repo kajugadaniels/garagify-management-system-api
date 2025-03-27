@@ -1,10 +1,14 @@
 from base.models import *
 from account.models import *
-from account.serializers import *
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('name', 'email', 'phone_number', 'image', 'role')
 
 class InventorySerializer(serializers.ModelSerializer):
     created_by = UserSerializer()
