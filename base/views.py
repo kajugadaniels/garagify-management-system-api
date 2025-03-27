@@ -82,14 +82,15 @@ class UpdateInventory(APIView):
     def put(self, request, pk, *args, **kwargs):
         """
         Updates an existing inventory item based on the provided data.
+        Only fields that are included in the request are updated.
         """
         try:
             # Retrieve the inventory item by its primary key (pk)
             inventory = Inventory.objects.get(pk=pk)
             
             # Pass the request data along with the instance (inventory) to the serializer
-            serializer = InventorySerializer(inventory, data=request.data, partial=False)  # partial=False means all fields must be provided
-            
+            serializer = InventorySerializer(inventory, data=request.data, partial=True)  # partial=True allows partial updates
+
             if serializer.is_valid():
                 # Save the updated inventory item
                 updated_inventory = serializer.save()
@@ -98,14 +99,15 @@ class UpdateInventory(APIView):
                     "data": InventorySerializer(updated_inventory).data
                 }, status=status.HTTP_200_OK)
             else:
-                raise ValidationError(detail="Invalid data provided for inventory update.", errors=serializer.errors)
+                # Raise validation error if the serializer is not valid
+                raise ValidationError("Invalid data provided for inventory update.")
 
         except Inventory.DoesNotExist:
             raise NotFound(detail="Inventory item not found.")
         except ValidationError as e:
             return Response({
                 "detail": "Inventory update failed due to validation errors.",
-                "errors": e.detail
+                "errors": e.detail  # This will properly show the validation error messages
             }, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({
