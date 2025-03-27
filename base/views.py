@@ -1,3 +1,5 @@
+import random
+import string
 from base.models import *
 from base.serializers import *
 from rest_framework.views import APIView
@@ -25,37 +27,40 @@ class GetUsers(APIView):
 class AddUser(APIView):
     permission_classes = [permissions.AllowAny]
 
+    def generate_random_password(self, length=8):
+        """
+        Generates a random password with letters and digits.
+        The default length is 8 characters.
+        """
+        characters = string.ascii_letters + string.digits
+        return ''.join(random.choice(characters) for _ in range(length))
+
     def post(self, request, *args, **kwargs):
         """
-        Registers a new user, automatically generates a username, and sets a default password.
+        Registers a new user, automatically generates a username and a password.
         """
-        # Copy request data and validate the passwords
         data = request.data.copy()
-        
-        # Check if the passwords match
-        password = data.get("password")
-        confirm_password = data.get("confirm_password")
-        
-        if password != confirm_password:
-            raise ValidationError({"detail": "Passwords do not match."})
 
-        # Set default password if not provided
-        if not password:
-            password = "defaultPassword123"  # Default password if not provided
-        
-        # Hash the password before saving it
-        data["password"] = make_password(password)
-        data["confirm_password"] = None  # We don't need to save the confirm_password
+        # Generate a random password
+        password = self.generate_random_password()
 
-        # Serialize the data and create user
-        serializer = UserSerializer(data=data)
+        # Add password to data to be saved
+        data['password'] = password
+
+        # Ensure the serializer is created and password is not included in response
+        serializer = UserSerializer(data=data, context={'request': request})
         
         if serializer.is_valid():
-            # Save the user, which will auto-generate the username
+            # Save the user, which will auto-generate the username and hash the password
             user = serializer.save()
+
+            # We don't send the password back in the response for security reasons
+            user_data = serializer.data
+            user_data.pop('password', None)
+
             return Response({
                 "detail": "User registered successfully.",
-                "data": UserSerializer(user).data
+                "data": user_data
             }, status=status.HTTP_201_CREATED)
         
         return Response({
