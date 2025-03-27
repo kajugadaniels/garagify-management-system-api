@@ -14,7 +14,7 @@ class GetUsers(APIView):
         Retrieves all users with detailed information.
         """
         users = User.objects.all()
-        serializer = UserSerializer(users, many=True)
+        serializer = UserSerializer(users, many=True, context={'request': request})
         return Response({
             "detail": "Users retrieved successfully.",
             "data": serializer.data
@@ -46,7 +46,7 @@ class UserDetails(APIView):
         """
         try:
             user = User.objects.get(pk=pk)
-            serializer = UserSerializer(user)
+            serializer = UserSerializer(user, context={'request': request})
             return Response({
                 "detail": "User details retrieved successfully.",
                 "data": serializer.data
