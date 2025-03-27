@@ -54,6 +54,31 @@ class UserDetails(APIView):
         except User.DoesNotExist:
             raise NotFound(detail="User not found.")
 
+class UpdateUser(APIView):
+
+    def put(self, request, pk, *args, **kwargs):
+        """
+        Updates an existing user based on the provided data.
+        """
+        try:
+            user = User.objects.get(pk=pk)
+            serializer = UserSerializer(user, data=request.data, partial=True)  # partial=True allows partial updates
+            if serializer.is_valid():
+                updated_user = serializer.save()
+                return Response({
+                    "detail": "User updated successfully.",
+                    "data": UserSerializer(updated_user).data
+                }, status=status.HTTP_200_OK)
+            else:
+                raise ValidationError("Invalid data provided for user update.")
+        except User.DoesNotExist:
+            raise NotFound(detail="User not found.")
+        except ValidationError as e:
+            return Response({
+                "detail": "User update failed due to validation errors.",
+                "errors": e.detail
+            }, status=status.HTTP_400_BAD_REQUEST)
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
