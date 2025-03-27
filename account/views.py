@@ -18,10 +18,10 @@ class LoginView(GenericAPIView):
         serializer = self.get_serializer(data=request.data)  # Use get_serializer method
         serializer.is_valid(raise_exception=True)
         
-        email = serializer.validated_data['email']
+        identifier = serializer.validated_data['identifier']
         password = serializer.validated_data['password']
 
-        user = authenticate(username=email, password=password)
+        user = authenticate(username=identifier, password=password)
 
         if user:
             # Delete old token and generate a new one
@@ -33,7 +33,7 @@ class LoginView(GenericAPIView):
                 'user': UserSerializer(user).data,  # Use your user serializer if needed
                 'message': 'Login successful.'
             }, status=status.HTTP_200_OK)
-        return Response({'error': 'Invalid email or password.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'error': 'Invalid identifier(email, username, phone_number) or password.'}, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
