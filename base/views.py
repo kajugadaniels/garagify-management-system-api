@@ -21,3 +21,30 @@ class GetInventory(APIView):
                 "detail": "An error occurred while retrieving inventories.",
                 "error": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class AddInventory(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        # Include the logged-in user ID in the data
+        data = request.data.copy()
+        data['created_by'] = request.user.id
+        
+        serializer = InventorySerializer(data=data)
+        if serializer.is_valid():
+            try:
+                inventory = serializer.save()
+                return Response({
+                    "detail": "Inventory created successfully.",
+                    "data": InventorySerializer(inventory).data
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({
+                    "detail": "An error occurred while creating the inventory.",
+                    "error": str(e)
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        return Response({
+            "detail": "Inventory creation failed.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
