@@ -20,6 +20,24 @@ class GetUsers(APIView):
             "data": serializer.data
         }, status=status.HTTP_200_OK)
 
+class AddUser(APIView):
+
+    def post(self, request, *args, **kwargs):
+        """
+        Registers a new user with the given data (name, email, phone_number, image, role).
+        """
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({
+                "detail": "User registered successfully.",
+                "data": UserSerializer(user).data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            "detail": "User registration failed.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
