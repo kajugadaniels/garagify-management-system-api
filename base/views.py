@@ -1,10 +1,10 @@
 from base.models import *
 from base.serializers import *
-from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth.hashers import make_password
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import generics, permissions, status
 from rest_framework.exceptions import NotFound, ValidationError
 
 class GetUsers(APIView):
@@ -23,6 +23,7 @@ class GetUsers(APIView):
         }, status=status.HTTP_200_OK)
 
 class AddUser(APIView):
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
         """
