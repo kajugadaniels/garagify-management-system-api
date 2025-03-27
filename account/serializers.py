@@ -5,6 +5,24 @@ from datetime import timedelta
 from rest_framework import serializers
 from django.contrib.auth.models import Permission
 
+def validatePasswordComplexity(password):
+    """
+    Validates that the password meets the complexity requirements:
+    - At least 8 characters long.
+    - Contains at least one capital letter.
+    - Contains at least one number.
+    - Contains at least one special character.
+    """
+    if len(password) < 8:
+        raise serializers.ValidationError("Password must be at least 8 characters long.")
+    if not re.search(r"[A-Z]", password):
+        raise serializers.ValidationError("Password must contain at least one capital letter.")
+    if not re.search(r"\d", password):
+        raise serializers.ValidationError("Password must contain at least one number.")
+    if not re.search(r"[!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?]", password):
+        raise serializers.ValidationError("Password must contain at least one special character.")
+    return password
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     password = serializers.CharField(write_only=True, required=True)
