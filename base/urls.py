@@ -7,10 +7,10 @@ app_name = 'base'
 
 urlpatterns = [
     path('inventories/', GetInventory.as_view(), name='GetInventory'),
-    path('inventory/add/', AddIInventory.as_view(), name='AddIInventory'),
-    path('inventory/<int:pk>/', IInventoryDetails.as_view(), name='IInventoryDetails'),
-    path('inventory/<int:pk>/update/', UpdateIInventory.as_view(), name='UpdateIInventory'),
-    path('inventory/<int:pk>/delete/', DeleteIInventory.as_view(), name='DeleteIInventory'),
+    # path('inventory/add/', AddInventory.as_view(), name='AddInventory'),
+    # path('inventory/<int:pk>/', IInventoryDetails.as_view(), name='IInventoryDetails'),
+    # path('inventory/<int:pk>/update/', UpdateIInventory.as_view(), name='UpdateIInventory'),
+    # path('inventory/<int:pk>/delete/', DeleteIInventory.as_view(), name='DeleteIInventory'),
 ] 
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

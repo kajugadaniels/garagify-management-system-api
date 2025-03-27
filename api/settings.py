@@ -88,7 +88,17 @@ WSGI_APPLICATION = 'api.wsgi.application'
 #     }
 # }
 
-DATABASES =  {
+print(str(os.getenv("NODE_ENV")))
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+if str(os.getenv("NODE_ENV"))=="production":
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+else:
+    DATABASES =  {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.getenv("MYSQL_DB", "garagify"),
