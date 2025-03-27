@@ -6,6 +6,12 @@ from django.conf.urls.static import static
 app_name = 'base'
 
 urlpatterns = [
+    path('users/', GetUsers.as_view(), name='GetUsers'),
+    path('user/add/', AddUser.as_view(), name='AddUser'),
+    path('user/<int:pk>/', UserDetails.as_view(), name='UserDetails'),
+    path('user/<int:pk>/update/', UpdateUser.as_view(), name='UpdateUser'),
+    path('user/<int:pk>/delete/', DeleteUser.as_view(), name='DeleteUser'),
+
     path('inventories/', GetInventory.as_view(), name='GetInventory'),
     path('inventory/add/', AddInventory.as_view(), name='AddInventory'),
     path('inventory/<int:pk>/', InventoryDetails.as_view(), name='InventoryDetails'),
