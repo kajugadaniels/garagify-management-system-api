@@ -11,9 +11,10 @@ class GetUsers(APIView):
 
     def get(self, request, *args, **kwargs):
         """
-        Retrieves all users with detailed information.
+        Retrieves all users, excluding superadmin users.
         """
-        users = User.objects.all()
+        # Exclude superadmin users (assuming superadmin is marked as is_staff=True)
+        users = User.objects.filter(is_staff=False)
         serializer = UserSerializer(users, many=True, context={'request': request})
         return Response({
             "detail": "Users retrieved successfully.",
