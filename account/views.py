@@ -20,24 +20,41 @@ class LoginView(APIView):
         # Validate the serializer
         if serializer.is_valid():
             # Get the user and password from validated data
-            user = serializer.validated_data['user']
+            identifier = serializer.validated_data['identifier']
             password = serializer.validated_data['password']
 
-            # Authenticate the user
-            user = authenticate(username=user.username, password=password)
+            # Try to find the user by email, phone_number, or username
+            User = get_user_model()
+            user = None
 
-            if user:
-                # Delete old token and generate a new one
-                Token.objects.filter(user=user).delete()
-                token, created = Token.objects.get_or_create(user=user)
+            # Check if the identifier is a valid email
+            if "@" in identifier:
+                user = User.objects.filter(email=identifier).first()
 
-                return Response({
-                    'token': token.key,
-                    'user': UserSerializer(user).data,  # Use your user serializer if needed
-                    'message': 'Login successful.'
-                }, status=status.HTTP_200_OK)
+            # Check if the identifier is a valid phone number
+            if not user:
+                user = User.objects.filter(phone_number=identifier).first()
 
-            return Response({'error': 'Invalid identifier (email, username, phone number) or password.'}, status=status.HTTP_400_BAD_REQUEST)
+            # Check if the identifier is a valid username
+            if not user:
+                user = User.objects.filter(username=identifier).first()
+
+            if not user:
+                return Response({'error': 'Invalid identifier (email, username, phone number) or password.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Check if the password is correct
+            if not user.check_password(password):
+                return Response({'error': 'Invalid identifier (email, username, phone number) or password.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Delete old token and generate a new one
+            Token.objects.filter(user=user).delete()
+            token, created = Token.objects.get_or_create(user=user)
+
+            return Response({
+                'token': token.key,
+                'user': UserSerializer(user).data,  # Use your user serializer if needed
+                'message': 'Login successful.'
+            }, status=status.HTTP_200_OK)
         
         # Return validation errors
         return Response({'error': 'Validation error', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
