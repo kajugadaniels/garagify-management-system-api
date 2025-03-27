@@ -26,8 +26,41 @@ def validatePasswordComplexity(password):
     return password
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
+    identifier = serializers.CharField(required=True)
     password = serializers.CharField(write_only=True, required=True)
+
+    def validate(self, attrs):
+        identifier = attrs.get('identifier')
+        password = attrs.get('password')
+
+        if not identifier:
+            raise serializers.ValidationError("Login (email, phone_number, or username) is required.")
+        
+        # Try to find the user by email, phone_number, or username
+        User = get_user_model()
+        user = None
+
+        # Check if the login is a valid email
+        if "@" in identifier:
+            user = User.objects.filter(email=identifier).first()
+        
+        # Check if the login is a valid phone number
+        if not user:
+            user = User.objects.filter(phone_number=identifier).first()
+        
+        # Check if the login is a valid username
+        if not user:
+            user = User.objects.filter(username=identifier).first()
+
+        if not user:
+            raise serializers.ValidationError("User with the provided identifier does not exist.")
+
+        # Check password
+        if not user.check_password(password):
+            raise serializers.ValidationError("Invalid password.")
+
+        attrs['user'] = user
+        return attrs
 
 class UserSerializer(serializers.ModelSerializer):
     user_permissions = serializers.SerializerMethodField()
