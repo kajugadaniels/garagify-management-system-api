@@ -3,6 +3,7 @@ from account.models import *
 from django.db.models import Q
 from datetime import timedelta
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 
 def validatePasswordComplexity(password):
@@ -76,3 +77,14 @@ class UserSerializer(serializers.ModelSerializer):
 
         instance.save()
         return instance
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField(
+        help_text="Enter the email address associated with your account."
+    )
+
+    def validate_email(self, value):
+        User = get_user_model()
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("No user found with this email address.")
+        return value
