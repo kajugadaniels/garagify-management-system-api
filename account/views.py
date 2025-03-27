@@ -80,6 +80,39 @@ class UpdateUserView(generics.UpdateAPIView):
             "message": "Account updated successfully."
         }, status=status.HTTP_200_OK)
 
+class UpdatePasswordView(APIView):
+    """
+    This view handles password change for the logged-in user.
+    After successfully changing the password, the user will be logged out (token invalidated).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user  # Get the currently authenticated user
+        old_password = request.data.get("old_password")
+        new_password = request.data.get("new_password")
+        confirm_new_password = request.data.get("confirm_new_password")
+
+        if not old_password or not new_password or not confirm_new_password:
+            return Response({"detail": "Old password, new password, and confirmation are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if old password is correct
+        if not user.check_password(old_password):
+            return Response({"detail": "Old password is incorrect."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Ensure new password and confirmation match
+        if new_password != confirm_new_password:
+            return Response({"detail": "New password and confirm new password do not match."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Update the password
+        user.set_password(new_password)
+        user.save()
+
+        # Invalidate the current token by deleting it
+        Token.objects.filter(user=user).delete()
+
+        return Response({"detail": "Password updated successfully. You have been logged out."}, status=status.HTTP_200_OK)
+
 class PasswordResetRequestView(APIView):
     """
     Initiate the password reset process by sending a 5-digit OTP to the user's email address.
