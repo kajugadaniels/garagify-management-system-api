@@ -38,6 +38,22 @@ class AddUser(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+class UserDetails(APIView):
+
+    def get(self, request, pk, *args, **kwargs):
+        """
+        Retrieves detailed information about a specific user based on the provided pk.
+        """
+        try:
+            user = User.objects.get(pk=pk)
+            serializer = UserSerializer(user)
+            return Response({
+                "detail": "User details retrieved successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            raise NotFound(detail="User not found.")
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
