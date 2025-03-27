@@ -6,9 +6,24 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
     class Meta:
         model = User
-        fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role')
+        fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role', 'password', 'confirm_password')
+
+    def validate(self, data):
+        """
+        Ensure that the password and confirm_password fields match.
+        """
+        password = data.get("password")
+        confirm_password = data.get("confirm_password")
+        
+        if password != confirm_password:
+            raise serializers.ValidationError({"detail": "Passwords do not match."})
+        
+        return data
 
 class InventorySerializer(serializers.ModelSerializer):
     created_by = UserSerializer()
