@@ -26,40 +26,34 @@ def validatePasswordComplexity(password):
     return password
 
 class LoginSerializer(serializers.Serializer):
-    identifier = serializers.CharField(required=True)
-    password = serializers.CharField(write_only=True, required=True)
+    identifier = serializers.CharField(
+        help_text="Enter your email, phone number, or username."
+    )
+    password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
         identifier = attrs.get('identifier')
         password = attrs.get('password')
 
         if not identifier:
-            raise serializers.ValidationError("Login (email, phone_number, or username) is required.")
-        
-        # Try to find the user by email, phone_number, or username
+            raise serializers.ValidationError("Identifier (email, phone number, or username) is required.")
+        if not password:
+            raise serializers.ValidationError("Password is required.")
+
         User = get_user_model()
-        user = None
+        try:
+            # Find user by email, phone number, or username
+            user = User.objects.get(
+                Q(email__iexact=identifier) | Q(phone_number=identifier) | Q(username__iexact=identifier)
+            )
+        except User.DoesNotExist:
+            raise serializers.ValidationError("No user found with the provided email, phone number, or username.")
 
-        # Check if the login is a valid email
-        if "@" in identifier:
-            user = User.objects.filter(email=identifier).first()
-        
-        # Check if the login is a valid phone number
-        if not user:
-            user = User.objects.filter(phone_number=identifier).first()
-        
-        # Check if the login is a valid username
-        if not user:
-            user = User.objects.filter(username=identifier).first()
-
-        if not user:
-            raise serializers.ValidationError("User with the provided identifier does not exist.")
-
-        # Check password
+        # Check if password is correct
         if not user.check_password(password):
-            raise serializers.ValidationError("Invalid password.")
+            raise serializers.ValidationError("Incorrect password. Please check your credentials.")
 
-        attrs['user'] = user
+        attrs['user'] = user  # Store the user object for later use in the view
         return attrs
 
 class UserSerializer(serializers.ModelSerializer):
