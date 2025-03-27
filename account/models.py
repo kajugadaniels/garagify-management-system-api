@@ -21,8 +21,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('Customer', 'Customer'),
     )
 
-    email = models.EmailField(unique=True)
     name = models.CharField(max_length=255)
+    username = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    email = models.EmailField(unique=True)
     phone_number = models.CharField(max_length=15, unique=True)
     image = ProcessedImageField(
         upload_to=user_image_path,
@@ -53,16 +54,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
+        if not self.username:
+            self.username = self.create_username(self.name)
         super(User, self).save(*args, **kwargs)
     
+    def create_username(self, name):
+        """
+        Generates a username by making the name lowercase and replacing spaces with hyphens.
+        """
+        return name.lower().replace(" ", "-")
+
     def get_full_name(self):
-        """
-        Returns the user's full name.
-        """
         return self.name
 
     def get_short_name(self):
-        """
-        Returns the user's short name.
-        """
         return self.name.split()[0] if self.name else self.email
