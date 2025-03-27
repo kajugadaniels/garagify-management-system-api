@@ -8,7 +8,7 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('name', 'email', 'phone_number', 'image', 'role')
+        fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role')
 
 class InventorySerializer(serializers.ModelSerializer):
     created_by = UserSerializer()
