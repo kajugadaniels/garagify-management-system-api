@@ -47,3 +47,30 @@ class AddInventory(APIView):
             "detail": "Inventory creation failed.",
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
+class InventoryDetails(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk, *args, **kwargs):
+        """
+        Retrieves detailed information about a specific inventory item, including user information.
+        """
+        try:
+            # Retrieve the inventory item by its primary key (pk)
+            inventory = Inventory.objects.get(pk=pk)
+            
+            # Serialize the inventory item data, including the nested created_by user information
+            serializer = InventorySerializer(inventory)
+            
+            return Response({
+                "detail": "Inventory details retrieved successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        
+        except Inventory.DoesNotExist:
+            raise NotFound(detail="Inventory item not found.")
+        except Exception as e:
+            return Response({
+                "detail": "An error occurred while retrieving the inventory details.",
+                "error": str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
