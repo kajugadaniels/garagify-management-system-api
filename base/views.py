@@ -6,6 +6,20 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound, ValidationError
 
+class GetUsers(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieves all users with detailed information.
+        """
+        users = User.objects.all()
+        serializer = UserSerializer(users, many=True)
+        return Response({
+            "detail": "Users retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
