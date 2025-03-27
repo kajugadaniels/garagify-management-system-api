@@ -24,15 +24,19 @@ class AddUser(APIView):
 
     def post(self, request, *args, **kwargs):
         """
-        Registers a new user with the given data (name, email, phone_number, image, role).
+        Registers a new user and automatically generates a username.
         """
-        serializer = UserSerializer(data=request.data)
+        data = request.data.copy()
+        serializer = UserSerializer(data=data, context={'request': request})
+        
         if serializer.is_valid():
+            # Save the user, which will auto-generate the username
             user = serializer.save()
             return Response({
                 "detail": "User registered successfully.",
                 "data": UserSerializer(user).data
             }, status=status.HTTP_201_CREATED)
+        
         return Response({
             "detail": "User registration failed.",
             "errors": serializer.errors
