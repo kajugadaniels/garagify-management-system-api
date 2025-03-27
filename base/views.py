@@ -26,14 +26,13 @@ class AddInventory(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        # Include the logged-in user ID in the data
         data = request.data.copy()
         data['created_by'] = request.user.id
         
         serializer = InventorySerializer(data=data)
         if serializer.is_valid():
             try:
-                inventory = serializer.save()
+                inventory = serializer.save(created_by=request.user)  # Save with the full user instance
                 return Response({
                     "detail": "Inventory created successfully.",
                     "data": InventorySerializer(inventory).data
