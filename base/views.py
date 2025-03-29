@@ -60,7 +60,7 @@ class AddUser(APIView):
         The Team
         """
 
-        from_email = settings.DEFAULT_FROM_EMAIL  # Make sure this is set in your settings.py
+        from_email = settings.DEFAULT_FROM_EMAIL
         recipient_list = [user.email]
         
         # Send the email using the same logic as PasswordResetRequestView
@@ -87,7 +87,7 @@ class AddUser(APIView):
             user = serializer.save()
 
             # Set the raw password and hash it correctly
-            user.set_password(password)  # This hashes the password before saving
+            user.set_password(password)
             user.save()
 
             # Send the welcome email to the user with plaintext password
