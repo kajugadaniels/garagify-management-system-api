@@ -681,3 +681,27 @@ class UpdateVehicleSolution(APIView):
             "detail": "Vehicle solution update failed.",
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
+class DeleteVehicleSolution(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk, *args, **kwargs):
+        try:
+            solution = VehicleSolution.objects.get(pk=pk)
+        except VehicleSolution.DoesNotExist:
+            raise NotFound(detail="Vehicle solution not found.")
+
+        # Restore inventory for each solution item before deletion
+        for item in solution.solution_items.all():
+            inventory_item = item.inventory_item
+            try:
+                available_quantity = int(inventory_item.quantity)
+            except (TypeError, ValueError):
+                available_quantity = 0
+            inventory_item.quantity = str(available_quantity + item.quantity_used)
+            inventory_item.save()
+
+        solution.delete()
+        return Response({
+            "detail": "Vehicle solution deleted successfully."
+        }, status=status.HTTP_204_NO_CONTENT)
