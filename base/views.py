@@ -354,6 +354,30 @@ class VehicleDetails(APIView):
             "data": serializer.data
         }, status=status.HTTP_200_OK)
 
+class UpdateVehicle(APIView):
+    """
+    Updates an existing vehicle record.
+    Supports partial updates.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, pk, *args, **kwargs):
+        try:
+            vehicle = Vehicle.objects.get(pk=pk)
+        except Vehicle.DoesNotExist:
+            raise NotFound(detail="Vehicle not found.")
+        serializer = VehicleSerializer(vehicle, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            updated_vehicle = serializer.save()
+            return Response({
+                "detail": "Vehicle updated successfully.",
+                "data": VehicleSerializer(updated_vehicle, context={'request': request}).data
+            }, status=status.HTTP_200_OK)
+        return Response({
+            "detail": "Vehicle update failed.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
