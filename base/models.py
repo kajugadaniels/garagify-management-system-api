@@ -71,6 +71,8 @@ class Inventory(models.Model):
     unit_price = models.CharField(max_length=255, null=True, blank=True)
     created_by = models.ForeignKey(
         User,
+        null=True,
+        blank=True,
         on_delete=models.CASCADE,
     )
     created_at = models.DateField(default=timezone.now)
