@@ -35,6 +35,12 @@ urlpatterns = [
     path('inventory/<int:pk>/', InventoryDetails.as_view(), name='InventoryDetails'),
     path('inventory/<int:pk>/update/', UpdateInventory.as_view(), name='UpdateInventory'),
     path('inventory/<int:pk>/delete/', DeleteInventory.as_view(), name='DeleteInventory'),
+
+    path('vehicle-solutions/', GetVehicleSolutions.as_view(), name='GetVehicleSolutions'),
+    path('vehicle-solution/add/', AddVehicleSolution.as_view(), name='AddVehicleSolution'),
+    path('vehicle-solution/<int:pk>/', VehicleSolutionDetails.as_view(), name='VehicleSolutionDetails'),
+    path('vehicle-solution/<int:pk>/update/', UpdateVehicleSolution.as_view(), name='UpdateVehicleSolution'),
+    path('vehicle-solution/<int:pk>/delete/', DeleteVehicleSolution.as_view(), name='DeleteVehicleSolution'),
 ] 
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
