@@ -23,15 +23,6 @@ class VehicleSerializer(serializers.ModelSerializer):
         model = Vehicle
         fields = ('id', 'customer', 'customer_id', 'make', 'model', 'year', 'color', 'license_plate', 'vin', 'created_at', 'updated_at')
 
-class VehicleIssueSerializer(serializers.ModelSerializer):
-    vehicle = VehicleSerializer(read_only=True)
-    vehicle_id = serializers.IntegerField(write_only=True)
-
-    class Meta:
-        model = VehicleIssue
-        fields = ('id', 'vehicle', 'vehicle_id', 'reported_issue', 'diagnosed_issue', 'repair_notes', 'status', 'estimated_cost', 'created_at', 'updated_at')
-        read_only_fields = ('created_at', 'updated_at')
-
 class InventorySerializer(serializers.ModelSerializer):
     created_by = UserSerializer()
 
@@ -194,3 +185,25 @@ class VehicleSolutionSerializer(serializers.ModelSerializer):
             serializer.save(vehicle_solution=instance)
 
         return instance
+
+class VehicleIssueSerializer(serializers.ModelSerializer):
+    vehicle = VehicleSerializer(read_only=True)
+    vehicle_id = serializers.IntegerField(write_only=True)
+    solution = VehicleSolutionSerializer(read_only=True, required=False)
+
+    class Meta:
+        model = VehicleIssue
+        fields = (
+            'id',
+            'vehicle',
+            'vehicle_id',
+            'reported_issue',
+            'diagnosed_issue',
+            'repair_notes',
+            'status',
+            'estimated_cost',
+            'created_at',
+            'updated_at',
+            'solution'
+        )
+        read_only_fields = ('created_at', 'updated_at')
