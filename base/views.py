@@ -691,7 +691,7 @@ class DeleteVehicleSolution(APIView):
         except VehicleSolution.DoesNotExist:
             raise NotFound(detail="Vehicle solution not found.")
 
-        # Restore inventory for each solution item before deletion
+        # Restore inventory for each solution item before deletion.
         for item in solution.solution_items.all():
             inventory_item = item.inventory_item
             try:
