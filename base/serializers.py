@@ -5,6 +5,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -225,8 +226,15 @@ class VehicleSerializer(serializers.ModelSerializer):
             'vehicle_issues'
         )
 
+class UserSerializer(serializers.ModelSerializer):
+    vehicles = VehicleSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = User
+        fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role', 'vehicles')
+
 class CustomerSerializer(serializers.ModelSerializer):
-    vehicles = VehicleSerializer(many=True, read_only=True, source='vehicle_set')
+    vehicles = VehicleSerializer(many=True, read_only=True)
 
     class Meta:
         model = User
