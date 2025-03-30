@@ -207,3 +207,26 @@ class VehicleIssueSerializer(serializers.ModelSerializer):
             'solution'
         )
         read_only_fields = ('created_at', 'updated_at')
+
+class VehicleSerializer(serializers.ModelSerializer):
+    customer = UserSerializer(read_only=True)
+    customer_id = serializers.IntegerField(write_only=True)
+    # Include related vehicle issues; assumes the default related_name "vehicleissue_set"
+    vehicle_issues = VehicleIssueSerializer(many=True, read_only=True, source='vehicleissue_set')
+
+    class Meta:
+        model = Vehicle
+        fields = (
+            'id', 
+            'customer', 
+            'customer_id', 
+            'make', 
+            'model', 
+            'year', 
+            'color', 
+            'license_plate', 
+            'vin', 
+            'created_at', 
+            'updated_at',
+            'vehicle_issues'
+        )
