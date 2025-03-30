@@ -1,109 +1,32 @@
 from account.models import *
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 
 class Vehicle(models.Model):
-    customer = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-    )
-    model = models.CharField(max_length=255, null=True, blank=True)
-    year = models.CharField(max_length=255, null=True, blank=True)
-    color = models.PositiveIntegerField(null=True, blank=True)
-    plate_number = models.PositiveIntegerField(unique=True)
-    created_at = models.DateField(default=timezone.now)
+    """
+    Model representing a customer's vehicle brought in for repairs.
+    
+    Stores detailed information about the vehicle including manufacturer,
+    model, year, license details, VIN, mileage, and timestamps.
+    """
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="vehicles", help_text="The customer who owns the vehicle.")
+    make = models.CharField(max_length=100, null=True, blank=True, help_text="Manufacturer of the vehicle (e.g., Toyota, Ford, etc.).")
+    model = models.CharField(max_length=100, null=True, blank=True, help_text="Model of the vehicle (e.g., Camry, F-150, etc.).")
+    year = models.PositiveIntegerField(null=True, blank=True, help_text="Year the vehicle was manufactured.")
+    color = models.CharField(max_length=50, null=True, blank=True, help_text="Color of the vehicle.")
+    license_plate = models.CharField(max_length=20, unique=True, null=True, blank=True, help_text="Unique license plate number of the vehicle.")
+    vin = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text="Vehicle Identification Number (VIN).")
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True, help_text="Timestamp when the vehicle record was created.")
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True, help_text="Timestamp when the vehicle record was last updated.")
 
     class Meta:
         ordering = ['-created_at']
+        verbose_name = "Vehicle"
         verbose_name_plural = "Vehicles"
 
     def __str__(self):
-        return f"Vehicle({self.model}) by ({self.customer.name}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
-
-class VehicleCheckIn(models.Model):
-    vehicle = models.ForeignKey(
-        Vehicle,
-        on_delete=models.CASCADE,
-    )
-    received_by = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-    )
-    arrival_date = models.DateField(default=timezone.now)
-    created_at = models.DateField(default=timezone.now)
-
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name_plural = "Vehicles Issues"
-
-    def __str__(self):
-        return f"Vehicle ({self.vehicle.model}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
-
-class VehicleNoteProperty(models.Model):
-    vehicle_check_in = models.ForeignKey(
-        VehicleCheckIn,
-        on_delete=models.CASCADE,
-    )
-    name = models.CharField(max_length=255)
-
-    class Meta:
-        verbose_name_plural = "Vehicle Note Properties"
-
-    def __str__(self):
-        return self.name
-
-class VehicleIssue(models.Model):
-    vehicle = models.ForeignKey(
-        Vehicle,
-        on_delete=models.CASCADE,
-    )
-    issue_reported = models.CharField(max_length=255, null=True, blank=True)
-    issue_diagnosed = models.CharField(max_length=255, null=True, blank=True)
-    created_by = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-    )
-    created_at = models.DateField(default=timezone.now)
-
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name_plural = "Vehicles Issues"
-
-    def __str__(self):
-        return f"Vehicle ({self.vehicle.model}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
-
-
-class Quotation(models.Model):
-    STATUS_CHOICES = (
-        ('Pending', 'Pending'),
-        ('Approved', 'Approved'),
-        ('Rejected', 'Rejected'),
-    )
-
-    vehicle = models.ForeignKey(
-        Vehicle,
-        on_delete=models.CASCADE,
-    )
-    mechanic = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="quotations_by_mechanic"
-    )
-    total_cost = models.CharField(max_length=255, null=True, blank=True)
-    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="Pending", null=True, blank=True)
-    created_by = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="quotations_created_by"
-    )
-    created_at = models.DateField(default=timezone.now)
-
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name_plural = "Quotations"
-
-    def __str__(self):
-        return f"Vehicle ({self.vehicle.model}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+        return f"{self.make} {self.model} ({self.license_plate})"
 
 class Inventory(models.Model):
     ITEM_TYPES = (
@@ -127,35 +50,3 @@ class Inventory(models.Model):
 
     def __str__(self):
         return f"Inventory ({self.item_name}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
-
-class QuotationItem(models.Model):
-    ITEM_TYPES = (
-        ('Spare Part', 'Spare Part'),
-        ('Tools', 'Tools'),
-        ('Materials', 'Materials'),
-    )
-
-    quotation = models.ForeignKey(
-        Quotation,
-        on_delete=models.CASCADE,
-    )
-
-    item = models.ForeignKey(
-        Inventory,
-        on_delete=models.CASCADE,
-    )
-    quantity = models.CharField(max_length=255, null=True, blank=True)
-    unit_price = models.CharField(max_length=255, null=True, blank=True)
-    created_by = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-    )
-    created_at = models.DateField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name_plural = "Quotation of Item"
-
-    def __str__(self):
-        return f"Quotation item ({self.item.item_name}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
