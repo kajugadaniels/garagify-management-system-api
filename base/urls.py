@@ -24,6 +24,12 @@ urlpatterns = [
     path('vehicle/<int:pk>/update/', UpdateVehicle.as_view(), name='UpdateVehicle'),
     path('vehicle/<int:pk>/delete/', DeleteVehicle.as_view(), name='DeleteVehicle'),
 
+    path('vehicle-issues/', GetVehicleIssues.as_view(), name='GetVehicleIssues'),
+    path('vehicle-issue/add/', AddVehicleIssue.as_view(), name='AddVehicleIssue'),
+    path('vehicle-issue/<int:pk>/', VehicleIssueDetails.as_view(), name='VehicleIssueDetails'),
+    path('vehicle-issue/<int:pk>/update/', UpdateVehicleIssue.as_view(), name='UpdateVehicleIssue'),
+    path('vehicle-issue/<int:pk>/delete/', DeleteVehicleIssue.as_view(), name='DeleteVehicleIssue'),
+
     path('inventories/', GetInventory.as_view(), name='GetInventory'),
     path('inventory/add/', AddInventory.as_view(), name='AddInventory'),
     path('inventory/<int:pk>/', InventoryDetails.as_view(), name='InventoryDetails'),
