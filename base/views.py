@@ -408,6 +408,27 @@ class GetVehicleIssues(APIView):
             "data": serializer.data
         }, status=status.HTTP_200_OK)
 
+class AddVehicleIssue(APIView):
+    """
+    Creates a new vehicle issue.
+    Expects a write-only field 'vehicle_id' along with issue details.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        data = request.data.copy()
+        serializer = VehicleIssueSerializer(data=data, context={'request': request})
+        if serializer.is_valid():
+            issue = serializer.save()
+            return Response({
+                "detail": "Vehicle issue created successfully.",
+                "data": VehicleIssueSerializer(issue, context={'request': request}).data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            "detail": "Vehicle issue creation failed.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
