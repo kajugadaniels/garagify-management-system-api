@@ -123,22 +123,6 @@ class UserDetails(APIView):
         except User.DoesNotExist:
             raise NotFound(detail="User not found.")
 
-class DeleteUser(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def delete(self, request, pk, *args, **kwargs):
-        """
-        Deletes an existing user based on the provided pk.
-        """
-        try:
-            user = User.objects.get(pk=pk)
-            user.delete()
-            return Response({
-                "detail": "User deleted successfully."
-            }, status=status.HTTP_204_NO_CONTENT)
-        except User.DoesNotExist:
-            raise NotFound(detail="User not found.")
-
 class UpdateUser(APIView):
 
     def put(self, request, pk, *args, **kwargs):
@@ -163,6 +147,22 @@ class UpdateUser(APIView):
                 "detail": "User update failed due to validation errors.",
                 "errors": e.detail
             }, status=status.HTTP_400_BAD_REQUEST)
+
+class DeleteUser(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk, *args, **kwargs):
+        """
+        Deletes an existing user based on the provided pk.
+        """
+        try:
+            user = User.objects.get(pk=pk)
+            user.delete()
+            return Response({
+                "detail": "User deleted successfully."
+            }, status=status.HTTP_204_NO_CONTENT)
+        except User.DoesNotExist:
+            raise NotFound(detail="User not found.")
 
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
