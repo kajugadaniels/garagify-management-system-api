@@ -470,6 +470,22 @@ class UpdateVehicleIssue(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+class DeleteVehicleIssue(APIView):
+    """
+    Deletes a specific vehicle issue.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, pk, *args, **kwargs):
+        try:
+            issue = VehicleIssue.objects.get(pk=pk)
+        except VehicleIssue.DoesNotExist:
+            raise NotFound(detail="Vehicle issue not found.")
+        issue.delete()
+        return Response({
+            "detail": "Vehicle issue deleted successfully."
+        }, status=status.HTTP_204_NO_CONTENT)
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
