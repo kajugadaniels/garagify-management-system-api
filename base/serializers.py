@@ -10,11 +10,6 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role')
 
-class CustomerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role')
-
 class VehicleSerializer(serializers.ModelSerializer):
     customer = UserSerializer(read_only=True)
     customer_id = serializers.IntegerField(write_only=True)
@@ -229,3 +224,8 @@ class VehicleSerializer(serializers.ModelSerializer):
             'updated_at',
             'vehicle_issues'
         )
+
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role')
