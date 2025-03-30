@@ -103,3 +103,22 @@ class VehicleSolution(models.Model):
 
     def __str__(self):
         return f"Solution for {self.vehicle_issue} on {self.solution_date.strftime('%Y-%m-%d')}"
+
+class VehicleSolutionMechanic(models.Model):
+    """
+    Model representing the association between a vehicle solution and a mechanic.
+    
+    This intermediary model allows associating one or more mechanics (users with a role
+    of 'Mechanic') with a given vehicle solution.
+    """
+    vehicle_solution = models.ForeignKey(VehicleSolution, on_delete=models.CASCADE, related_name='mechanic_assignments', help_text="The vehicle solution to which this mechanic is assigned.")
+    mechanic = models.ForeignKey(User, on_delete=models.PROTECT, help_text="The mechanic assigned to the vehicle solution. The user should have a role of 'Mechanic'.")
+
+    class Meta:
+        ordering = ['id']
+        verbose_name = "Vehicle Solution Mechanic"
+        verbose_name_plural = "Vehicle Solution Mechanics"
+        unique_together = ('vehicle_solution', 'mechanic')
+
+    def __str__(self):
+        return f"Mechanic {self.mechanic.name} assigned to solution for {self.vehicle_solution.vehicle_issue}"
