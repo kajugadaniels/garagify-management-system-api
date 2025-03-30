@@ -81,3 +81,25 @@ class Inventory(models.Model):
 
     def __str__(self):
         return f"Inventory ({self.item_name}) on {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+
+class VehicleSolution(models.Model):
+    """
+    Model representing the repair solution provided for a specific vehicle issue.
+    
+    This model captures the details of the repair solution, including a detailed 
+    description of the work performed, the date the solution was provided, and the 
+    total cost of the repair. Multiple mechanics responsible for the repair are 
+    associated via the VehicleSolutionMechanic model.
+    """
+    vehicle_issue = models.OneToOneField(VehicleIssue, on_delete=models.CASCADE, related_name='solution', help_text="The vehicle issue for which this solution is provided.")
+    solution_description = models.TextField(help_text="Detailed description of the repair solution provided.")
+    solution_date = models.DateTimeField(default=timezone.now, help_text="The date and time when the solution was provided.")
+    total_cost = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="The total cost incurred for the repair solution.")
+
+    class Meta:
+        ordering = ['-solution_date']
+        verbose_name = "Vehicle Solution"
+        verbose_name_plural = "Vehicle Solutions"
+
+    def __str__(self):
+        return f"Solution for {self.vehicle_issue} on {self.solution_date.strftime('%Y-%m-%d')}"
