@@ -429,6 +429,23 @@ class AddVehicleIssue(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+class VehicleIssueDetails(APIView):
+    """
+    Retrieves detailed information about a specific vehicle issue.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk, *args, **kwargs):
+        try:
+            issue = VehicleIssue.objects.get(pk=pk)
+        except VehicleIssue.DoesNotExist:
+            raise NotFound(detail="Vehicle issue not found.")
+        serializer = VehicleIssueSerializer(issue, context={'request': request})
+        return Response({
+            "detail": "Vehicle issue details retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
