@@ -631,3 +631,20 @@ class GetVehicleSolutions(APIView):
             "detail": "Vehicle solutions retrieved successfully.",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+
+class AddVehicleSolution(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        serializer = VehicleSolutionSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            vehicle_solution = serializer.save()
+            return Response({
+                "detail": "Vehicle solution created successfully.",
+                "data": VehicleSolutionSerializer(vehicle_solution, context={'request': request}).data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            "detail": "Vehicle solution creation failed.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
