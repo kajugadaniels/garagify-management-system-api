@@ -117,7 +117,7 @@ class SolutionItem(models.Model):
     vehicle_solution = models.ForeignKey(VehicleSolution, on_delete=models.CASCADE, related_name='solution_items', help_text="The vehicle solution in which the inventory item was used.")
     inventory_item = models.ForeignKey(Inventory, on_delete=models.PROTECT, help_text="The inventory item used in the repair.")
     quantity_used = models.PositiveIntegerField(help_text="The quantity of the inventory item used for the repair.")
-    item_cost = models.DecimalField(max_digits=10, decimal_places=2, help_text="Cost per unit of the inventory item at the time of usage.")
+    item_cost = models.DecimalField(max_digits=10, null=True, blank=True, decimal_places=2, help_text="Cost per unit of the inventory item at the time of usage.")
 
     class Meta:
         ordering = ['id']
