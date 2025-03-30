@@ -49,3 +49,77 @@ class VehicleSolutionMechanicSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # Directly create the mechanic assignment
         return VehicleSolutionMechanic.objects.create(**validated_data)
+
+class SolutionItemSerializer(serializers.ModelSerializer):
+    inventory_item = serializers.SerializerMethodField(read_only=True)
+    inventory_item_id = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = SolutionItem
+        fields = ['id', 'inventory_item', 'inventory_item_id', 'quantity_used', 'item_cost']
+
+    def get_inventory_item(self, obj):
+        # Minimal representation of inventory item details
+        return {
+            "id": obj.inventory_item.id,
+            "item_name": obj.inventory_item.item_name,
+            "quantity": obj.inventory_item.quantity,
+            "unit_price": obj.inventory_item.unit_price,
+        }
+
+    def validate_quantity_used(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Quantity used must be a positive integer.")
+        return value
+
+    def create(self, validated_data):
+        inventory_item_id = validated_data.pop('inventory_item_id')
+        quantity_used = validated_data.get('quantity_used')
+        try:
+            inventory_item = Inventory.objects.get(id=inventory_item_id)
+        except Inventory.DoesNotExist:
+            raise serializers.ValidationError("Inventory item not found.")
+
+        try:
+            available_quantity = int(inventory_item.quantity)
+        except (TypeError, ValueError):
+            raise serializers.ValidationError("Inventory quantity is invalid.")
+
+        if quantity_used > available_quantity:
+            raise serializers.ValidationError(f"Not enough quantity available. Only {available_quantity} left.")
+
+        # Deduct the quantity used from the inventory
+        inventory_item.quantity = str(available_quantity - quantity_used)
+        inventory_item.save()
+
+        validated_data['inventory_item'] = inventory_item
+        return SolutionItem.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        new_quantity = validated_data.get('quantity_used', instance.quantity_used)
+        inventory_item = instance.inventory_item
+        try:
+            available_quantity = int(inventory_item.quantity)
+        except (TypeError, ValueError):
+            raise serializers.ValidationError("Inventory quantity is invalid.")
+
+        # Restore the previous quantity before applying update
+        available_quantity += instance.quantity_used
+        delta = new_quantity - instance.quantity_used
+
+        if delta > 0:
+            # Check if additional quantity required is available
+            if delta > available_quantity:
+                raise serializers.ValidationError(f"Not enough quantity available. Only {available_quantity} left.")
+            available_quantity -= delta
+        else:
+            # Negative delta means quantity reduced, so add back to inventory
+            available_quantity -= delta  # (subtracting a negative adds to available_quantity)
+
+        inventory_item.quantity = str(available_quantity)
+        inventory_item.save()
+
+        instance.quantity_used = new_quantity
+        instance.item_cost = validated_data.get('item_cost', instance.item_cost)
+        instance.save()
+        return instance
