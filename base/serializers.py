@@ -89,15 +89,7 @@ class SolutionItemSerializer(serializers.ModelSerializer):
         if quantity_used > available_quantity:
             raise serializers.ValidationError(f"Not enough quantity available. Only {available_quantity} left.")
 
-        # Calculate item_cost automatically based on unit_price * quantity_used.
-        try:
-            unit_price = Decimal(inventory_item.unit_price)
-        except (InvalidOperation, TypeError):
-            raise serializers.ValidationError("Invalid unit price in inventory.")
-        calculated_cost = unit_price * Decimal(quantity_used)
-        validated_data['item_cost'] = calculated_cost
-
-        # Deduct the quantity used from the inventory.
+        # Deduct the quantity used from the inventory
         inventory_item.quantity = str(available_quantity - quantity_used)
         inventory_item.save()
 
@@ -112,26 +104,24 @@ class SolutionItemSerializer(serializers.ModelSerializer):
         except (TypeError, ValueError):
             raise serializers.ValidationError("Inventory quantity is invalid.")
 
-        # Restore the previous quantity before applying update.
+        # Restore the previous quantity before applying update
         available_quantity += instance.quantity_used
         delta = new_quantity - instance.quantity_used
 
         if delta > 0:
+            # Check if additional quantity required is available
             if delta > available_quantity:
                 raise serializers.ValidationError(f"Not enough quantity available. Only {available_quantity} left.")
             available_quantity -= delta
         else:
+            # Negative delta means quantity reduced, so add back to inventory
             available_quantity -= delta  # (subtracting a negative adds to available_quantity)
 
         inventory_item.quantity = str(available_quantity)
         inventory_item.save()
 
-        try:
-            unit_price = Decimal(inventory_item.unit_price)
-        except (InvalidOperation, TypeError):
-            raise serializers.ValidationError("Invalid unit price in inventory.")
-        instance.item_cost = unit_price * Decimal(new_quantity)
         instance.quantity_used = new_quantity
+        instance.item_cost = validated_data.get('item_cost', instance.item_cost)
         instance.save()
         return instance
 
