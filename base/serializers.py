@@ -126,17 +126,8 @@ class SolutionItemSerializer(serializers.ModelSerializer):
         return instance
 
 class VehicleSolutionSerializer(serializers.ModelSerializer):
-    # Nested solution items.
     solution_items = SolutionItemSerializer(many=True, required=False)
-    # For output: include nested mechanic assignments.
-    mechanic_assignments = VehicleSolutionMechanicSerializer(many=True, read_only=True)
-    # For input: a list of mechanic IDs.
-    mechanic_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        write_only=True,
-        required=False,
-        help_text="List of mechanic IDs assigned to this solution."
-    )
+    mechanic_assignments = VehicleSolutionMechanicSerializer(many=True, required=False)
 
     class Meta:
         model = VehicleSolution
@@ -147,38 +138,39 @@ class VehicleSolutionSerializer(serializers.ModelSerializer):
             'solution_date',
             'total_cost',
             'solution_items',
-            'mechanic_assignments',
-            'mechanic_ids'
+            'mechanic_assignments'
         ]
 
     def create(self, validated_data):
         solution_items_data = validated_data.pop('solution_items', [])
-        mechanic_ids = validated_data.pop('mechanic_ids', [])
+        mechanics_data = validated_data.pop('mechanic_assignments', [])
         vehicle_solution = VehicleSolution.objects.create(**validated_data)
 
-        # Create nested solution items.
+        # Create nested solution items
         for item_data in solution_items_data:
             serializer = SolutionItemSerializer(data=item_data, context=self.context)
             serializer.is_valid(raise_exception=True)
             serializer.save(vehicle_solution=vehicle_solution)
 
-        # Create mechanic assignments from mechanic_ids.
-        for mech_id in mechanic_ids:
-            VehicleSolutionMechanic.objects.create(vehicle_solution=vehicle_solution, mechanic_id=mech_id)
+        # Create nested mechanic assignments
+        for mech_data in mechanics_data:
+            serializer = VehicleSolutionMechanicSerializer(data=mech_data, context=self.context)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(vehicle_solution=vehicle_solution)
 
         return vehicle_solution
 
     def update(self, instance, validated_data):
         solution_items_data = validated_data.pop('solution_items', [])
-        mechanic_ids = validated_data.pop('mechanic_ids', [])
+        mechanics_data = validated_data.pop('mechanic_assignments', [])
 
-        # Update basic fields.
+        # Update basic fields of vehicle solution
         instance.solution_description = validated_data.get('solution_description', instance.solution_description)
         instance.solution_date = validated_data.get('solution_date', instance.solution_date)
         instance.total_cost = validated_data.get('total_cost', instance.total_cost)
         instance.save()
 
-        # Restore inventory for existing solution items before update.
+        # Restore inventory for existing solution items before update
         for item in instance.solution_items.all():
             inventory_item = item.inventory_item
             try:
@@ -187,16 +179,18 @@ class VehicleSolutionSerializer(serializers.ModelSerializer):
                 available_quantity = 0
             inventory_item.quantity = str(available_quantity + item.quantity_used)
             inventory_item.save()
-        # Delete old solution items and recreate from new data.
+        # Delete old solution items and recreate from new data
         instance.solution_items.all().delete()
         for item_data in solution_items_data:
             serializer = SolutionItemSerializer(data=item_data, context=self.context)
             serializer.is_valid(raise_exception=True)
             serializer.save(vehicle_solution=instance)
 
-        # Update mechanic assignments: Clear and recreate from mechanic_ids.
+        # Update mechanic assignments: Clear and recreate
         instance.mechanic_assignments.all().delete()
-        for mech_id in mechanic_ids:
-            VehicleSolutionMechanic.objects.create(vehicle_solution=instance, mechanic_id=mech_id)
+        for mech_data in mechanics_data:
+            serializer = VehicleSolutionMechanicSerializer(data=mech_data, context=self.context)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(vehicle_solution=instance)
 
         return instance
