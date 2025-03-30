@@ -302,6 +302,20 @@ class DeleteCustomer(APIView):
         except User.DoesNotExist:
             raise NotFound(detail="Customer not found.")
 
+class GetVehicles(APIView):
+    """
+    Retrieves all vehicles.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        vehicles = Vehicle.objects.all().order_by('-created_at')
+        serializer = VehicleSerializer(vehicles, many=True, context={'request': request})
+        return Response({
+            "detail": "Vehicles retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
