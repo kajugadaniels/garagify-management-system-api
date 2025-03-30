@@ -269,12 +269,12 @@ class UpdateCustomer(APIView):
         """
         try:
             customer = User.objects.get(pk=pk, role='Customer')
-            serializer = UserSerializer(customer, data=request.data, partial=True, context={'request': request})
+            serializer = CustomerSerializer(customer, data=request.data, partial=True, context={'request': request})
             if serializer.is_valid():
                 updated_customer = serializer.save()
                 return Response({
                     "detail": "Customer updated successfully.",
-                    "data": UserSerializer(updated_customer, context={'request': request}).data
+                    "data": CustomerSerializer(updated_customer, context={'request': request}).data
                 }, status=status.HTTP_200_OK)
             else:
                 raise ValidationError("Invalid data provided for customer update.")
@@ -285,6 +285,22 @@ class UpdateCustomer(APIView):
                 "detail": "Customer update failed due to validation errors.",
                 "errors": e.detail
             }, status=status.HTTP_400_BAD_REQUEST)
+
+class DeleteCustomer(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk, *args, **kwargs):
+        """
+        Deletes an existing customer.
+        """
+        try:
+            customer = User.objects.get(pk=pk, role='Customer')
+            customer.delete()
+            return Response({
+                "detail": "Customer deleted successfully."
+            }, status=status.HTTP_204_NO_CONTENT)
+        except User.DoesNotExist:
+            raise NotFound(detail="Customer not found.")
 
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
