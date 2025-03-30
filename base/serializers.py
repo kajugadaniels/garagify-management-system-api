@@ -39,15 +39,14 @@ class InventorySerializer(serializers.ModelSerializer):
         fields = ('item_name', 'item_type', 'quantity', 'unit_price', 'created_by')
 
 class VehicleSolutionMechanicSerializer(serializers.ModelSerializer):
-    mechanic_id = serializers.IntegerField(write_only=True)
+    # For output purposes only.
     mechanic = UserSerializer(read_only=True)
 
     class Meta:
         model = VehicleSolutionMechanic
-        fields = ['id', 'mechanic', 'mechanic_id']
+        fields = ['id', 'mechanic']
 
     def create(self, validated_data):
-        # Directly create the mechanic assignment
         return VehicleSolutionMechanic.objects.create(**validated_data)
 
 class SolutionItemSerializer(serializers.ModelSerializer):
