@@ -211,8 +211,7 @@ class VehicleIssueSerializer(serializers.ModelSerializer):
 class VehicleSerializer(serializers.ModelSerializer):
     customer = UserSerializer(read_only=True)
     customer_id = serializers.IntegerField(write_only=True)
-    # Include related vehicle issues; assumes the default related_name "vehicleissue_set"
-    vehicle_issues = VehicleIssueSerializer(many=True, read_only=True, source='vehicleissue_set')
+    vehicle_issues = VehicleIssueSerializer(many=True, read_only=True, source='issues')
 
     class Meta:
         model = Vehicle
