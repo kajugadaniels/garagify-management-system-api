@@ -18,6 +18,12 @@ urlpatterns = [
     path('customer/<int:pk>/update/', UpdateCustomer.as_view(), name='UpdateCustomer'),
     path('customer/<int:pk>/delete/', DeleteCustomer.as_view(), name='DeleteCustomer'),
 
+    path('vehicles/', GetVehicles.as_view(), name='GetVehicles'),
+    path('vehicle/add/', AddVehicle.as_view(), name='AddVehicle'),
+    path('vehicle/<int:pk>/', VehicleDetails.as_view(), name='VehicleDetails'),
+    path('vehicle/<int:pk>/update/', UpdateVehicle.as_view(), name='UpdateVehicle'),
+    path('vehicle/<int:pk>/delete/', DeleteVehicle.as_view(), name='DeleteVehicle'),
+
     path('inventories/', GetInventory.as_view(), name='GetInventory'),
     path('inventory/add/', AddInventory.as_view(), name='AddInventory'),
     path('inventory/<int:pk>/', InventoryDetails.as_view(), name='InventoryDetails'),
