@@ -620,3 +620,14 @@ class DeleteInventory(APIView):
                 "detail": "An error occurred while deleting the inventory item.",
                 "error": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class GetVehicleSolutions(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        solutions = VehicleSolution.objects.all().order_by('-id')
+        serializer = VehicleSolutionSerializer(solutions, many=True, context={'request': request})
+        return Response({
+            "detail": "Vehicle solutions retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
