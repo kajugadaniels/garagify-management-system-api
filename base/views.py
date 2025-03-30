@@ -260,7 +260,31 @@ class CustomerDetails(APIView):
         except User.DoesNotExist:
             raise NotFound(detail="Customer not found.")
 
+class UpdateCustomer(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def put(self, request, pk, *args, **kwargs):
+        """
+        Updates an existing customer's details.
+        """
+        try:
+            customer = User.objects.get(pk=pk, role='Customer')
+            serializer = UserSerializer(customer, data=request.data, partial=True, context={'request': request})
+            if serializer.is_valid():
+                updated_customer = serializer.save()
+                return Response({
+                    "detail": "Customer updated successfully.",
+                    "data": UserSerializer(updated_customer, context={'request': request}).data
+                }, status=status.HTTP_200_OK)
+            else:
+                raise ValidationError("Invalid data provided for customer update.")
+        except User.DoesNotExist:
+            raise NotFound(detail="Customer not found.")
+        except ValidationError as e:
+            return Response({
+                "detail": "Customer update failed due to validation errors.",
+                "errors": e.detail
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
