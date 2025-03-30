@@ -12,62 +12,73 @@ from rest_framework import generics, permissions, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 class LoginView(APIView):
+    """
+    Handle login using an identifier (email, phone number, or username) and password.
+    Before validating the full login data, this view checks the user's role.
+    Only users with roles "Admin", "Mechanic", "Storekeeper", or "Cashier" are allowed.
+    If a user with a "Customer" role attempts to login, an error is returned.
+    """
     permission_classes = [permissions.AllowAny]
-    
+
     def post(self, request, *args, **kwargs):
-        # Instantiate the serializer with the request data
+        # First, ensure that the identifier is provided
+        identifier = request.data.get('identifier', '').strip()
+        if not identifier:
+            return Response({"error": "Identifier (email, phone number, or username) is required."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        User = get_user_model()
+        user = None
+
+        # Try to locate the user by email (case-insensitive)
+        if "@" in identifier:
+            user = User.objects.filter(email__iexact=identifier).first()
+
+        # If not found by email, try phone number
+        if not user:
+            user = User.objects.filter(phone_number=identifier).first()
+
+        # If still not found, try username (case-insensitive)
+        if not user:
+            user = User.objects.filter(username__iexact=identifier).first()
+
+        if not user:
+            return Response({"error": "No user found with the provided identifier."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # Role check: only allow specified roles
+        allowed_roles = ["Admin", "Mechanic", "Storekeeper", "Cashier"]
+        if user.role not in allowed_roles:
+            return Response(
+                {"error": "Users with the role 'Customer' are not allowed to login."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Now proceed with full validation using the serializer
         serializer = LoginSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            # Extract validated identifier and password
-            identifier = serializer.validated_data['identifier']
-            password = serializer.validated_data['password']
+        if not serializer.is_valid():
+            return Response(
+                {"error": "Validation error", "details": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-            User = get_user_model()
-            user = None
+        # After validation, check if the provided password is correct
+        password = serializer.validated_data['password']
+        if not user.check_password(password):
+            return Response(
+                {"error": "Incorrect password. Please check your credentials."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-            # Find user by email, phone number, or username
-            if "@" in identifier:
-                user = User.objects.filter(email__iexact=identifier).first()
-            if not user:
-                user = User.objects.filter(phone_number=identifier).first()
-            if not user:
-                user = User.objects.filter(username__iexact=identifier).first()
+        # Successful authentication: Invalidate any existing token and generate a new one
+        Token.objects.filter(user=user).delete()
+        token, created = Token.objects.get_or_create(user=user)
 
-            if not user:
-                return Response(
-                    {'error': 'Invalid identifier (email, username, phone number) or password.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Check if the password is correct
-            if not user.check_password(password):
-                return Response(
-                    {'error': 'Invalid identifier (email, username, phone number) or password.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Restrict login based on user role:
-            # Only allow roles: Admin, Mechanic, Storekeeper, Cashier
-            allowed_roles = ['Admin', 'Mechanic', 'Storekeeper', 'Cashier']
-            if user.role not in allowed_roles:
-                return Response(
-                    {'error': 'Users with the role "Customer" are not allowed to log in through this endpoint.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # Authentication succeeded: Invalidate any existing token and create a new one
-            Token.objects.filter(user=user).delete()
-            token, created = Token.objects.get_or_create(user=user)
-
-            return Response({
-                'token': token.key,
-                'user': UserSerializer(user).data,
-                'message': 'Login successful.'
-            }, status=status.HTTP_200_OK)
-        
-        # Return validation errors if serializer is not valid
-        return Response({'error': 'Validation error', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'token': token.key,
+            'user': UserSerializer(user).data,
+            'message': 'Login successful.'
+        }, status=status.HTTP_200_OK)
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
