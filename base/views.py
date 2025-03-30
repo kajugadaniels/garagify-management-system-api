@@ -243,6 +243,25 @@ class AddCustomer(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+class CustomerDetails(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk, *args, **kwargs):
+        """
+        Retrieves detailed information about a specific customer.
+        """
+        try:
+            customer = User.objects.get(pk=pk, role='Customer')
+            serializer = CustomerSerializer(customer, context={'request': request})
+            return Response({
+                "detail": "Customer details retrieved successfully.",
+                "data": serializer.data
+            }, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            raise NotFound(detail="Customer not found.")
+
+
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
