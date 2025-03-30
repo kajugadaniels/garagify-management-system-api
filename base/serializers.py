@@ -123,3 +123,73 @@ class SolutionItemSerializer(serializers.ModelSerializer):
         instance.item_cost = validated_data.get('item_cost', instance.item_cost)
         instance.save()
         return instance
+
+class VehicleSolutionSerializer(serializers.ModelSerializer):
+    solution_items = SolutionItemSerializer(many=True, required=False)
+    mechanic_assignments = VehicleSolutionMechanicSerializer(many=True, required=False)
+
+    class Meta:
+        model = VehicleSolution
+        fields = [
+            'id',
+            'vehicle_issue',
+            'solution_description',
+            'solution_date',
+            'total_cost',
+            'solution_items',
+            'mechanic_assignments'
+        ]
+
+    def create(self, validated_data):
+        solution_items_data = validated_data.pop('solution_items', [])
+        mechanics_data = validated_data.pop('mechanic_assignments', [])
+        vehicle_solution = VehicleSolution.objects.create(**validated_data)
+
+        # Create nested solution items
+        for item_data in solution_items_data:
+            serializer = SolutionItemSerializer(data=item_data, context=self.context)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(vehicle_solution=vehicle_solution)
+
+        # Create nested mechanic assignments
+        for mech_data in mechanics_data:
+            serializer = VehicleSolutionMechanicSerializer(data=mech_data, context=self.context)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(vehicle_solution=vehicle_solution)
+
+        return vehicle_solution
+
+    def update(self, instance, validated_data):
+        solution_items_data = validated_data.pop('solution_items', [])
+        mechanics_data = validated_data.pop('mechanic_assignments', [])
+
+        # Update basic fields of vehicle solution
+        instance.solution_description = validated_data.get('solution_description', instance.solution_description)
+        instance.solution_date = validated_data.get('solution_date', instance.solution_date)
+        instance.total_cost = validated_data.get('total_cost', instance.total_cost)
+        instance.save()
+
+        # Restore inventory for existing solution items before update
+        for item in instance.solution_items.all():
+            inventory_item = item.inventory_item
+            try:
+                available_quantity = int(inventory_item.quantity)
+            except (TypeError, ValueError):
+                available_quantity = 0
+            inventory_item.quantity = str(available_quantity + item.quantity_used)
+            inventory_item.save()
+        # Delete old solution items and recreate from new data
+        instance.solution_items.all().delete()
+        for item_data in solution_items_data:
+            serializer = SolutionItemSerializer(data=item_data, context=self.context)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(vehicle_solution=instance)
+
+        # Update mechanic assignments: Clear and recreate
+        instance.mechanic_assignments.all().delete()
+        for mech_data in mechanics_data:
+            serializer = VehicleSolutionMechanicSerializer(data=mech_data, context=self.context)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(vehicle_solution=instance)
+
+        return instance
