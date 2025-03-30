@@ -662,3 +662,22 @@ class VehicleSolutionDetails(APIView):
             "data": serializer.data
         }, status=status.HTTP_200_OK)
 
+class UpdateVehicleSolution(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def put(self, request, pk, *args, **kwargs):
+        try:
+            solution = VehicleSolution.objects.get(pk=pk)
+        except VehicleSolution.DoesNotExist:
+            raise NotFound(detail="Vehicle solution not found.")
+        serializer = VehicleSolutionSerializer(solution, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            updated_solution = serializer.save()
+            return Response({
+                "detail": "Vehicle solution updated successfully.",
+                "data": VehicleSolutionSerializer(updated_solution, context={'request': request}).data
+            }, status=status.HTTP_200_OK)
+        return Response({
+            "detail": "Vehicle solution update failed.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
