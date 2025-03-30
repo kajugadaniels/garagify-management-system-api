@@ -4,6 +4,7 @@ from django.core.mail import send_mail
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
+from django.contrib.auth import get_user_model
 from rest_framework.authtoken.models import Token
 from rest_framework.generics import GenericAPIView
 from rest_framework.exceptions import PermissionDenied
@@ -14,49 +15,58 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
     
     def post(self, request, *args, **kwargs):
-        # Directly instantiate the serializer
+        # Instantiate the serializer with the request data
         serializer = LoginSerializer(data=request.data)
         
-        # Validate the serializer
         if serializer.is_valid():
-            # Get the user and password from validated data
+            # Extract validated identifier and password
             identifier = serializer.validated_data['identifier']
             password = serializer.validated_data['password']
 
-            # Try to find the user by email, phone_number, or username
             User = get_user_model()
             user = None
 
-            # Check if the identifier is a valid email
+            # Find user by email, phone number, or username
             if "@" in identifier:
-                user = User.objects.filter(email=identifier).first()
-
-            # Check if the identifier is a valid phone number
+                user = User.objects.filter(email__iexact=identifier).first()
             if not user:
                 user = User.objects.filter(phone_number=identifier).first()
-
-            # Check if the identifier is a valid username
             if not user:
-                user = User.objects.filter(username=identifier).first()
+                user = User.objects.filter(username__iexact=identifier).first()
 
             if not user:
-                return Response({'error': 'Invalid identifier (email, username, phone number) or password.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {'error': 'Invalid identifier (email, username, phone number) or password.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             # Check if the password is correct
             if not user.check_password(password):
-                return Response({'error': 'Invalid identifier (email, username, phone number) or password.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {'error': 'Invalid identifier (email, username, phone number) or password.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            # Delete old token and generate a new one
+            # Restrict login based on user role:
+            # Only allow roles: Admin, Mechanic, Storekeeper, Cashier
+            allowed_roles = ['Admin', 'Mechanic', 'Storekeeper', 'Cashier']
+            if user.role not in allowed_roles:
+                return Response(
+                    {'error': 'Users with the role "Customer" are not allowed to log in through this endpoint.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Authentication succeeded: Invalidate any existing token and create a new one
             Token.objects.filter(user=user).delete()
             token, created = Token.objects.get_or_create(user=user)
 
             return Response({
                 'token': token.key,
-                'user': UserSerializer(user).data,  # Use your user serializer if needed
+                'user': UserSerializer(user).data,
                 'message': 'Login successful.'
             }, status=status.HTTP_200_OK)
         
-        # Return validation errors
+        # Return validation errors if serializer is not valid
         return Response({'error': 'Validation error', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):
