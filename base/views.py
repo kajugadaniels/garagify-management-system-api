@@ -625,7 +625,7 @@ class GetVehicleSolutions(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        solutions = VehicleSolution.objects.all().order_by('-id')
+        solutions = VehicleSolution.objects.all().order_by('-solution_date')
         serializer = VehicleSolutionSerializer(solutions, many=True, context={'request': request})
         return Response({
             "detail": "Vehicle solutions retrieved successfully.",
