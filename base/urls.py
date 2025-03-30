@@ -12,6 +12,12 @@ urlpatterns = [
     path('user/<int:pk>/update/', UpdateUser.as_view(), name='UpdateUser'),
     path('user/<int:pk>/delete/', DeleteUser.as_view(), name='DeleteUser'),
 
+    path('customers/', GetCustomers.as_view(), name='GetCustomers'),
+    path('customer/add/', AddCustomer.as_view(), name='AddCustomer'),
+    path('customer/<int:pk>/', CustomerDetails.as_view(), name='CustomerDetails'),
+    path('customer/<int:pk>/update/', UpdateCustomer.as_view(), name='UpdateCustomer'),
+    path('customer/<int:pk>/delete/', DeleteCustomer.as_view(), name='DeleteCustomer'),
+
     path('inventories/', GetInventory.as_view(), name='GetInventory'),
     path('inventory/add/', AddInventory.as_view(), name='AddInventory'),
     path('inventory/<int:pk>/', InventoryDetails.as_view(), name='InventoryDetails'),
