@@ -394,6 +394,20 @@ class DeleteVehicle(APIView):
             "detail": "Vehicle deleted successfully."
         }, status=status.HTTP_204_NO_CONTENT)
 
+class GetVehicleIssues(APIView):
+    """
+    Retrieves all vehicle issues.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        issues = VehicleIssue.objects.all().order_by('-created_at')
+        serializer = VehicleIssueSerializer(issues, many=True, context={'request': request})
+        return Response({
+            "detail": "Vehicle issues retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
