@@ -60,7 +60,7 @@ class AddUser(APIView):
         The Team
         """
 
-        from_email = settings.DEFAULT_FROM_EMAIL
+        from_email = settings.DEFAULT_FROM_EMAIL  # Make sure this is set in your settings.py
         recipient_list = [user.email]
         
         # Send the email using the same logic as PasswordResetRequestView
@@ -87,7 +87,7 @@ class AddUser(APIView):
             user = serializer.save()
 
             # Set the raw password and hash it correctly
-            user.set_password(password)
+            user.set_password(password)  # This hashes the password before saving
             user.save()
 
             # Send the welcome email to the user with plaintext password
@@ -163,6 +163,20 @@ class DeleteUser(APIView):
             }, status=status.HTTP_204_NO_CONTENT)
         except User.DoesNotExist:
             raise NotFound(detail="User not found.")
+
+class GetCustomers(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieves all customers (users with role 'Customer').
+        """
+        customers = User.objects.filter(role='Customer')
+        serializer = CustomerSerializer(customers, many=True, context={'request': request})
+        return Response({
+            "detail": "Customers retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
 
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
