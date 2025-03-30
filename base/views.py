@@ -178,6 +178,71 @@ class GetCustomers(APIView):
             "data": serializer.data
         }, status=status.HTTP_200_OK)
 
+class AddCustomer(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def generate_random_password(self, length=8):
+        """
+        Generates a random password with letters and digits.
+        The default length is 8 characters.
+        """
+        characters = string.ascii_letters + string.digits
+        return ''.join(random.choice(characters) for _ in range(length))
+
+    def send_welcome_email(self, user, password):
+        """
+        Sends a welcome email to the customer including their password in plaintext.
+        """
+        subject = "Welcome to Our Service!"
+        message = f"""
+        Hello {user.name},
+
+        You have been successfully registered as a customer.
+
+        Here are your details:
+        Name: {user.name}
+        Email: {user.email}
+        Phone Number: {user.phone_number}
+        Role: {user.role}
+
+        Your temporary password is: {password}
+
+        Please change your password after logging in for the first time.
+
+        Best regards,
+        The Team
+        """
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = [user.email]
+        send_mail(subject, message, from_email, recipient_list)
+
+    def post(self, request, *args, **kwargs):
+        """
+        Registers a new customer by automatically generating a username and password,
+        forces the role to 'Customer', and sends a welcome email.
+        """
+        data = request.data.copy()
+        data['role'] = 'Customer'  # force role to 'Customer'
+        password = self.generate_random_password()
+        data['password'] = password
+
+        serializer = CustomerSerializer(data=data, context={'request': request})
+        if serializer.is_valid():
+            user = serializer.save()
+            user.set_password(password)  # Hash the password before saving
+            user.save()
+            self.send_welcome_email(user, password)
+            user_data = serializer.data
+            user_data.pop('password', None)
+            return Response({
+                "detail": "Customer registered successfully. A welcome email has been sent.",
+                "data": user_data
+            }, status=status.HTTP_201_CREATED)
+        return Response({
+            "detail": "Customer registration failed.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
 class GetInventory(APIView):
     permission_classes = [IsAuthenticated]
 
