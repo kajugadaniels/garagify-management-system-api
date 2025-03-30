@@ -56,7 +56,6 @@ class SolutionItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SolutionItem
-        # item_cost is now auto-calculated; no need to supply it.
         fields = ['id', 'inventory_item', 'inventory_item_id', 'quantity_used', 'item_cost']
 
     def get_inventory_item(self, obj):
@@ -117,18 +116,15 @@ class SolutionItemSerializer(serializers.ModelSerializer):
         delta = new_quantity - instance.quantity_used
 
         if delta > 0:
-            # Check if additional quantity required is available.
             if delta > available_quantity:
                 raise serializers.ValidationError(f"Not enough quantity available. Only {available_quantity} left.")
             available_quantity -= delta
         else:
-            # Negative delta means quantity reduced; add back to inventory.
             available_quantity -= delta  # (subtracting a negative adds to available_quantity)
 
         inventory_item.quantity = str(available_quantity)
         inventory_item.save()
 
-        # Recalculate the cost automatically.
         try:
             unit_price = Decimal(inventory_item.unit_price)
         except (InvalidOperation, TypeError):
@@ -138,86 +134,78 @@ class SolutionItemSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-class SolutionItemSerializer(serializers.ModelSerializer):
-    inventory_item = serializers.SerializerMethodField(read_only=True)
-    inventory_item_id = serializers.IntegerField(write_only=True)
+class VehicleSolutionSerializer(serializers.ModelSerializer):
+    # Nested solution items.
+    solution_items = SolutionItemSerializer(many=True, required=False)
+    # For output: include nested mechanic assignments.
+    mechanic_assignments = VehicleSolutionMechanicSerializer(many=True, read_only=True)
+    # For input: a list of mechanic IDs.
+    mechanic_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False,
+        help_text="List of mechanic IDs assigned to this solution."
+    )
 
     class Meta:
-        model = SolutionItem
-        fields = ['id', 'inventory_item', 'inventory_item_id', 'quantity_used', 'item_cost']
-
-    def get_inventory_item(self, obj):
-        # Minimal representation of inventory item details
-        return {
-            "id": obj.inventory_item.id,
-            "item_name": obj.inventory_item.item_name,
-            "quantity": obj.inventory_item.quantity,
-            "unit_price": obj.inventory_item.unit_price,
-        }
-
-    def validate_quantity_used(self, value):
-        if value <= 0:
-            raise serializers.ValidationError("Quantity used must be a positive integer.")
-        return value
+        model = VehicleSolution
+        fields = [
+            'id',
+            'vehicle_issue',
+            'solution_description',
+            'solution_date',
+            'total_cost',
+            'solution_items',
+            'mechanic_assignments',
+            'mechanic_ids'
+        ]
 
     def create(self, validated_data):
-        inventory_item_id = validated_data.pop('inventory_item_id')
-        quantity_used = validated_data.get('quantity_used')
-        try:
-            inventory_item = Inventory.objects.get(id=inventory_item_id)
-        except Inventory.DoesNotExist:
-            raise serializers.ValidationError("Inventory item not found.")
+        solution_items_data = validated_data.pop('solution_items', [])
+        mechanic_ids = validated_data.pop('mechanic_ids', [])
+        vehicle_solution = VehicleSolution.objects.create(**validated_data)
 
-        try:
-            available_quantity = int(inventory_item.quantity)
-        except (TypeError, ValueError):
-            raise serializers.ValidationError("Inventory quantity is invalid.")
+        # Create nested solution items.
+        for item_data in solution_items_data:
+            serializer = SolutionItemSerializer(data=item_data, context=self.context)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(vehicle_solution=vehicle_solution)
 
-        if quantity_used > available_quantity:
-            raise serializers.ValidationError(f"Not enough quantity available. Only {available_quantity} left.")
+        # Create mechanic assignments from mechanic_ids.
+        for mech_id in mechanic_ids:
+            VehicleSolutionMechanic.objects.create(vehicle_solution=vehicle_solution, mechanic_id=mech_id)
 
-        # Calculate item_cost automatically based on unit_price * quantity_used.
-        try:
-            unit_price = Decimal(inventory_item.unit_price)
-        except (InvalidOperation, TypeError):
-            raise serializers.ValidationError("Invalid unit price in inventory.")
-        calculated_cost = unit_price * Decimal(quantity_used)
-        validated_data['item_cost'] = calculated_cost
-
-        # Deduct the quantity used from the inventory.
-        inventory_item.quantity = str(available_quantity - quantity_used)
-        inventory_item.save()
-
-        validated_data['inventory_item'] = inventory_item
-        return SolutionItem.objects.create(**validated_data)
+        return vehicle_solution
 
     def update(self, instance, validated_data):
-        new_quantity = validated_data.get('quantity_used', instance.quantity_used)
-        inventory_item = instance.inventory_item
-        try:
-            available_quantity = int(inventory_item.quantity)
-        except (TypeError, ValueError):
-            raise serializers.ValidationError("Inventory quantity is invalid.")
+        solution_items_data = validated_data.pop('solution_items', [])
+        mechanic_ids = validated_data.pop('mechanic_ids', [])
 
-        # Restore the previous quantity before applying update.
-        available_quantity += instance.quantity_used
-        delta = new_quantity - instance.quantity_used
-
-        if delta > 0:
-            if delta > available_quantity:
-                raise serializers.ValidationError(f"Not enough quantity available. Only {available_quantity} left.")
-            available_quantity -= delta
-        else:
-            available_quantity -= delta  # (subtracting a negative adds to available_quantity)
-
-        inventory_item.quantity = str(available_quantity)
-        inventory_item.save()
-
-        try:
-            unit_price = Decimal(inventory_item.unit_price)
-        except (InvalidOperation, TypeError):
-            raise serializers.ValidationError("Invalid unit price in inventory.")
-        instance.item_cost = unit_price * Decimal(new_quantity)
-        instance.quantity_used = new_quantity
+        # Update basic fields.
+        instance.solution_description = validated_data.get('solution_description', instance.solution_description)
+        instance.solution_date = validated_data.get('solution_date', instance.solution_date)
+        instance.total_cost = validated_data.get('total_cost', instance.total_cost)
         instance.save()
+
+        # Restore inventory for existing solution items before update.
+        for item in instance.solution_items.all():
+            inventory_item = item.inventory_item
+            try:
+                available_quantity = int(inventory_item.quantity)
+            except (TypeError, ValueError):
+                available_quantity = 0
+            inventory_item.quantity = str(available_quantity + item.quantity_used)
+            inventory_item.save()
+        # Delete old solution items and recreate from new data.
+        instance.solution_items.all().delete()
+        for item_data in solution_items_data:
+            serializer = SolutionItemSerializer(data=item_data, context=self.context)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(vehicle_solution=instance)
+
+        # Update mechanic assignments: Clear and recreate from mechanic_ids.
+        instance.mechanic_assignments.all().delete()
+        for mech_id in mechanic_ids:
+            VehicleSolutionMechanic.objects.create(vehicle_solution=instance, mechanic_id=mech_id)
+
         return instance
