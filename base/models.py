@@ -104,6 +104,28 @@ class VehicleSolution(models.Model):
     def __str__(self):
         return f"Solution for {self.vehicle_issue} on {self.solution_date.strftime('%Y-%m-%d')}"
 
+class SolutionItem(models.Model):
+    """
+    Intermediary model representing the inventory items (such as spare parts) 
+    used in a vehicle solution.
+    
+    This model stores the inventory item used, the quantity consumed during the repair,
+    and the cost per unit at the time of usage.
+    """
+    vehicle_solution = models.ForeignKey(VehicleSolution, on_delete=models.CASCADE, related_name='solution_items', help_text="The vehicle solution in which the inventory item was used.")
+    inventory_item = models.ForeignKey(Inventory, on_delete=models.PROTECT, help_text="The inventory item used in the repair.")
+    quantity_used = models.PositiveIntegerField(help_text="The quantity of the inventory item used for the repair.")
+    item_cost = models.DecimalField(max_digits=10, decimal_places=2, help_text="Cost per unit of the inventory item at the time of usage.")
+
+    class Meta:
+        ordering = ['id']
+        verbose_name = "Solution Item"
+        verbose_name_plural = "Solution Items"
+
+    def __str__(self):
+        return f"{self.quantity_used} x {self.inventory_item.item_name} for {self.vehicle_solution}"
+
+
 class VehicleSolutionMechanic(models.Model):
     """
     Model representing the association between a vehicle solution and a mechanic.
