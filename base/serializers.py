@@ -231,11 +231,11 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role', 'vehicles')
+        fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role', 'created_at', 'vehicles')
 
 class CustomerSerializer(serializers.ModelSerializer):
     vehicles = VehicleSerializer(many=True, read_only=True)
 
     class Meta:
         model = User
-        fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role', 'vehicles')
+        fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role', 'created_at', 'vehicles')
