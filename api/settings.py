@@ -176,12 +176,10 @@ REST_FRAMEWORK = {
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173'
-    'https://www.api.pelekaap.com',
-    'https://www.pelekaap.com',
+    'https://garagify-lime.vercel.app',
+    'https://garagify-backend.onrender.com',
     'https://*.127.0.0.1'
 ]
-
-CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_METHODS = [
     "GET",
