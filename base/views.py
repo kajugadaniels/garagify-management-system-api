@@ -18,7 +18,7 @@ class GetUsers(APIView):
         Retrieves all users, excluding superadmin users and users with the role 'Customer'.
         """
         # Exclude superadmin users (assuming is_staff=True) and users with role 'Customer'
-        users = User.objects.filter(is_staff=False).exclude(role='Customer')
+        users = User.objects.filter(is_staff=False).exclude(role='Customer').order_by('-id')
         serializer = UserSerializer(users, many=True, context={'request': request})
         return Response({
             "detail": "Users retrieved successfully.",
