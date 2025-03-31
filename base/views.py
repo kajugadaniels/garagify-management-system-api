@@ -15,10 +15,10 @@ class GetUsers(APIView):
 
     def get(self, request, *args, **kwargs):
         """
-        Retrieves all users, excluding superadmin users.
+        Retrieves all users, excluding superadmin users and users with the role 'Customer'.
         """
-        # Exclude superadmin users (assuming superadmin is marked as is_staff=True)
-        users = User.objects.filter(is_staff=False)
+        # Exclude superadmin users (assuming is_staff=True) and users with role 'Customer'
+        users = User.objects.filter(is_staff=False).exclude(role='Customer')
         serializer = UserSerializer(users, many=True, context={'request': request})
         return Response({
             "detail": "Users retrieved successfully.",
