@@ -19,28 +19,6 @@ class VehicleSerializer(serializers.ModelSerializer):
         model = Vehicle
         fields = ('id', 'customer', 'customer_id', 'make', 'model', 'year', 'color', 'license_plate', 'vin', 'created_at', 'updated_at')
 
-class InventorySerializer(serializers.ModelSerializer):
-    created_by = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), write_only=True
-    )
-    created_by_details = UserSerializer(source='created_by', read_only=True)
-    total = serializers.SerializerMethodField(read_only=True)
-
-    class Meta:
-        model = Inventory
-        fields = ('item_name', 'item_type', 'quantity', 'unit_price', 'created_by', 'created_by_details', 'total')
-
-    def get_total(self, obj):
-        try:
-            qty = float(obj.quantity) if obj.quantity is not None else 0
-        except (TypeError, ValueError):
-            qty = 0
-        try:
-            price = float(obj.unit_price) if obj.unit_price is not None else 0
-        except (TypeError, ValueError):
-            price = 0
-        return qty * price
-
 class VehicleSolutionMechanicSerializer(serializers.ModelSerializer):
     mechanic_id = serializers.IntegerField(write_only=True)
     mechanic = UserSerializer(read_only=True)
@@ -275,3 +253,25 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'name', 'username', 'email', 'phone_number', 'image', 'role', 'address', 'created_at', 'vehicles')
+
+class InventorySerializer(serializers.ModelSerializer):
+    created_by = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True)
+    created_by_details = UserSerializer(source='created_by', read_only=True)
+    total = serializers.SerializerMethodField(read_only=True)
+    # Retrieve related solution items using the default reverse accessor "solutionitem_set"
+    solution_items = SolutionItemSerializer(many=True, read_only=True, source='solutionitem_set')
+
+    class Meta:
+        model = Inventory
+        fields = ('item_name', 'item_type', 'quantity', 'unit_price', 'created_by', 'created_by_details', 'total', 'solution_items')
+
+    def get_total(self, obj):
+        try:
+            qty = float(obj.quantity) if obj.quantity is not None else 0
+        except (TypeError, ValueError):
+            qty = 0
+        try:
+            price = float(obj.unit_price) if obj.unit_price is not None else 0
+        except (TypeError, ValueError):
+            price = 0
+        return qty * price
