@@ -91,12 +91,16 @@ WSGI_APPLICATION = 'api.wsgi.application'
 print(str(os.getenv("NODE_ENV")))
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 if str(os.getenv("NODE_ENV"))=="production":
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+    DATABASES =  {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.getenv("MYSQL_DB", ""),
+        'USER': os.getenv("MYSQL_USER", ""),
+        'PASSWORD': os.getenv("MYSQL_PASSWORD", ""),
+        'HOST': os.getenv("MYSQL_HOST", ""),
+        'PORT': os.getenv("MYSQL_PORT", ""),
     }
+}
 else:
     DATABASES =  {
     'default': {

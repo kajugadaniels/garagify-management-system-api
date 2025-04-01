@@ -20,11 +20,14 @@ class VehicleSerializer(serializers.ModelSerializer):
         fields = ('id', 'customer', 'customer_id', 'make', 'model', 'year', 'color', 'license_plate', 'vin', 'created_at', 'updated_at')
 
 class InventorySerializer(serializers.ModelSerializer):
-    created_by = UserSerializer()
+    created_by = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), write_only=True
+    )
+    created_by_details = UserSerializer(source='created_by', read_only=True)
 
     class Meta:
         model = Inventory
-        fields = ('item_name', 'item_type', 'quantity', 'unit_price', 'created_by')
+        fields = ('item_name', 'item_type', 'quantity', 'unit_price', 'created_by', 'created_by_details')
 
 class VehicleSolutionMechanicSerializer(serializers.ModelSerializer):
     mechanic_id = serializers.IntegerField(write_only=True)
