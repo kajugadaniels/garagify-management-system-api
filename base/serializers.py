@@ -124,6 +124,7 @@ class SolutionItemSerializer(serializers.ModelSerializer):
 class VehicleSolutionSerializer(serializers.ModelSerializer):
     solution_items = SolutionItemSerializer(many=True, required=False)
     mechanic_assignments = VehicleSolutionMechanicSerializer(many=True, required=False)
+    grand_total = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = VehicleSolution
@@ -134,8 +135,19 @@ class VehicleSolutionSerializer(serializers.ModelSerializer):
             'solution_date',
             'total_cost',
             'solution_items',
-            'mechanic_assignments'
+            'mechanic_assignments',
+            'grand_total'
         ]
+
+    def get_grand_total(self, obj):
+        total = 0.0
+        for item in obj.solution_items.all():
+            try:
+                unit_price = float(item.inventory_item.unit_price)
+            except (ValueError, TypeError):
+                unit_price = 0.0
+            total += unit_price * item.quantity_used
+        return total
 
     def create(self, validated_data):
         solution_items_data = validated_data.pop('solution_items', [])
