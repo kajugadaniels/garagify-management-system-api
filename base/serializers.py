@@ -24,10 +24,22 @@ class InventorySerializer(serializers.ModelSerializer):
         queryset=User.objects.all(), write_only=True
     )
     created_by_details = UserSerializer(source='created_by', read_only=True)
+    total = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Inventory
-        fields = ('item_name', 'item_type', 'quantity', 'unit_price', 'created_by', 'created_by_details')
+        fields = ('item_name', 'item_type', 'quantity', 'unit_price', 'created_by', 'created_by_details', 'total')
+
+    def get_total(self, obj):
+        try:
+            qty = float(obj.quantity) if obj.quantity is not None else 0
+        except (TypeError, ValueError):
+            qty = 0
+        try:
+            price = float(obj.unit_price) if obj.unit_price is not None else 0
+        except (TypeError, ValueError):
+            price = 0
+        return qty * price
 
 class VehicleSolutionMechanicSerializer(serializers.ModelSerializer):
     mechanic_id = serializers.IntegerField(write_only=True)
