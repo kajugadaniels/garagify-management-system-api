@@ -41,10 +41,11 @@ class VehicleSolutionMechanicSerializer(serializers.ModelSerializer):
 class SolutionItemSerializer(serializers.ModelSerializer):
     inventory_item = serializers.SerializerMethodField(read_only=True)
     inventory_item_id = serializers.IntegerField(write_only=True)
+    item_total = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = SolutionItem
-        fields = ['id', 'inventory_item', 'inventory_item_id', 'quantity_used', 'item_cost']
+        fields = ['id', 'inventory_item', 'inventory_item_id', 'quantity_used', 'item_cost', 'item_total']
 
     def get_inventory_item(self, obj):
         # Minimal representation of inventory item details
@@ -54,6 +55,14 @@ class SolutionItemSerializer(serializers.ModelSerializer):
             "quantity": obj.inventory_item.quantity,
             "unit_price": obj.inventory_item.unit_price,
         }
+
+    def get_item_total(self, obj):
+        # Calculate total based on unit_price and quantity_used
+        try:
+            unit_price = float(obj.inventory_item.unit_price)
+        except (ValueError, TypeError):
+            unit_price = 0.0
+        return unit_price * obj.quantity_used
 
     def validate_quantity_used(self, value):
         if value <= 0:
@@ -102,7 +111,7 @@ class SolutionItemSerializer(serializers.ModelSerializer):
             available_quantity -= delta
         else:
             # Negative delta means quantity reduced, so add back to inventory
-            available_quantity -= delta  # (subtracting a negative adds to available_quantity)
+            available_quantity -= delta  # subtracting a negative number
 
         inventory_item.quantity = str(available_quantity)
         inventory_item.save()

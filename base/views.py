@@ -171,7 +171,7 @@ class GetCustomers(APIView):
         """
         Retrieves all customers (users with role 'Customer').
         """
-        customers = User.objects.filter(role='Customer')
+        customers = User.objects.filter(role='Customer').order_by('-id')
         serializer = CustomerSerializer(customers, many=True, context={'request': request})
         return Response({
             "detail": "Customers retrieved successfully.",
