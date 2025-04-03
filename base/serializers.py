@@ -263,7 +263,7 @@ class InventorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Inventory
-        fields = ('item_name', 'item_type', 'quantity', 'unit_price', 'created_by', 'created_by_details', 'total', 'solution_items')
+        fields = ('id', 'item_name', 'item_type', 'quantity', 'unit_price', 'created_by', 'created_by_details', 'total', 'solution_items')
 
     def get_total(self, obj):
         try:
