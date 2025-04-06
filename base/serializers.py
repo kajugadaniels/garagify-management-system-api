@@ -280,3 +280,10 @@ class SettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Settings
         fields = '__all__'
+
+class QuotedItemSerializer(serializers.ModelSerializer):
+    inventory_item_name = serializers.CharField(source='inventory_item.item_name', read_only=True)
+
+    class Meta:
+        model = QuotedItem
+        fields = ['id', 'inventory_item', 'inventory_item_name', 'quantity_used', 'unit_price', 'item_total']
