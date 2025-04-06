@@ -887,6 +887,29 @@ class GetQuotationByIssueView(APIView):
             }
         }, status=status.HTTP_200_OK)
 
+class GetPaymentByQuotationView(APIView):
+    """
+    Retrieve payment details for a specific quotation.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, quotation_id, *args, **kwargs):
+        try:
+            quotation = Quotation.objects.get(id=quotation_id)
+        except Quotation.DoesNotExist:
+            return Response({"detail": "Quotation not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            payment = quotation.payment
+        except Payment.DoesNotExist:
+            return Response({"detail": "No payment found for this quotation."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = PaymentSerializer(payment, context={'request': request})
+        return Response({
+            "detail": "Payment retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
 class CreatePaymentView(APIView):
     """
     Create a payment for a specific quotation, including tax rate.
