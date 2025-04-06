@@ -295,3 +295,11 @@ class QuotedMechanicSerializer(serializers.ModelSerializer):
         model = QuotedMechanic
         fields = ['id', 'mechanic', 'mechanic_name', 'labor_share']
 
+class QuotationSerializer(serializers.ModelSerializer):
+    quoted_items = QuotedItemSerializer(many=True, read_only=True)
+    quoted_mechanics = QuotedMechanicSerializer(many=True, read_only=True)
+    vehicle_solution_id = serializers.IntegerField(source='vehicle_solution.id', read_only=True)
+
+    class Meta:
+        model = Quotation
+        fields = ['id', 'vehicle_solution_id', 'grand_total', 'quoted_items', 'quoted_mechanics', 'created_at', 'updated_at']
