@@ -28,3 +28,9 @@ class VehicleSolutionAdmin(admin.ModelAdmin):
     search_fields = ('vehicle_issue__reported_issue', 'solution_description')
     ordering = ('-solution_date',)
 
+@admin.register(SolutionItem)
+class SolutionItemAdmin(admin.ModelAdmin):
+    list_display = ('vehicle_solution', 'inventory_item', 'quantity_used', 'item_cost')
+    search_fields = ('inventory_item__item_name',)
+    ordering = ('id',)
+
