@@ -769,3 +769,61 @@ class SettingsView(APIView):
             "detail": "Failed to update settings.",
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
+class GenerateQuotationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, vehicle_solution_id, *args, **kwargs):
+        """
+        Retrieve or generate a quotation for a specific vehicle solution.
+        """
+        try:
+            solution = VehicleSolution.objects.get(pk=vehicle_solution_id)
+        except VehicleSolution.DoesNotExist:
+            raise NotFound("Vehicle solution not found.")
+
+        # If quotation exists, return it
+        quotation, created = Quotation.objects.get_or_create(vehicle_solution=solution)
+
+        if created:
+            # Calculate total from solution_items
+            total = Decimal('0.00')
+            for item in solution.solution_items.all():
+                try:
+                    unit_price = Decimal(item.inventory_item.unit_price)
+                except (ValueError, TypeError):
+                    unit_price = Decimal('0.00')
+                item_total = unit_price * item.quantity_used
+                total += item_total
+
+                QuotedItem.objects.create(
+                    quotation=quotation,
+                    inventory_item=item.inventory_item,
+                    quantity_used=item.quantity_used,
+                    unit_price=unit_price,
+                    item_total=item_total
+                )
+
+            # Calculate labor and split it
+            labor_cost = solution.total_cost or Decimal('0.00')
+            assigned_mechanics = solution.mechanic_assignments.all()
+            num_mechanics = assigned_mechanics.count()
+
+            if num_mechanics > 0:
+                per_mechanic_share = labor_cost / num_mechanics
+                for mech in assigned_mechanics:
+                    QuotedMechanic.objects.create(
+                        quotation=quotation,
+                        mechanic=mech.mechanic,
+                        labor_share=per_mechanic_share
+                    )
+
+            # Update grand total (items + labor)
+            quotation.grand_total = total + labor_cost
+            quotation.save()
+
+        serializer = QuotationSerializer(quotation, context={'request': request})
+        return Response({
+            "detail": "Quotation ready.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
