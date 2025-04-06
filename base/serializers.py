@@ -287,3 +287,11 @@ class QuotedItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuotedItem
         fields = ['id', 'inventory_item', 'inventory_item_name', 'quantity_used', 'unit_price', 'item_total']
+
+class QuotedMechanicSerializer(serializers.ModelSerializer):
+    mechanic_name = serializers.CharField(source='mechanic.name', read_only=True)
+
+    class Meta:
+        model = QuotedMechanic
+        fields = ['id', 'mechanic', 'mechanic_name', 'labor_share']
+
