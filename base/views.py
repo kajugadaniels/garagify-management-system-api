@@ -769,3 +769,70 @@ class SettingsView(APIView):
             "detail": "Failed to update settings.",
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
+
+class CreateQuotationView(APIView):
+    """
+    Create a quotation from a given vehicle issue by referencing its vehicle solution.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, issue_id, *args, **kwargs):
+        try:
+            issue = VehicleIssue.objects.get(id=issue_id)
+        except VehicleIssue.DoesNotExist:
+            raise NotFound("Vehicle issue not found.")
+
+        if not hasattr(issue, 'solution'):
+            return Response({"detail": "No solution found for this vehicle issue."}, status=status.HTTP_400_BAD_REQUEST)
+
+        solution = issue.solution
+
+        if hasattr(solution, 'quotation'):
+            return Response({"detail": "Quotation already exists for this solution."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Calculate totals
+        item_total = 0
+        quoted_items = []
+        for item in solution.solution_items.all():
+            unit_price = float(item.inventory_item.unit_price or 0)
+            total = unit_price * item.quantity_used
+            item_total += total
+            quoted_items.append({
+                "inventory_item": item.inventory_item,
+                "quantity_used": item.quantity_used,
+                "unit_price": unit_price,
+                "item_total": total
+            })
+
+        labor_cost = float(solution.total_cost or 0)
+        grand_total = item_total + labor_cost
+
+        # Create quotation
+        quotation = Quotation.objects.create(vehicle_solution=solution, grand_total=grand_total)
+
+        # Save item breakdowns
+        for item in quoted_items:
+            QuotedItem.objects.create(
+                quotation=quotation,
+                inventory_item=item["inventory_item"],
+                quantity_used=item["quantity_used"],
+                unit_price=item["unit_price"],
+                item_total=item["item_total"]
+            )
+
+        # Share labor cost equally
+        mechanic_count = solution.mechanic_assignments.count()
+        if mechanic_count > 0:
+            share = labor_cost / mechanic_count
+            for assignment in solution.mechanic_assignments.all():
+                QuotedMechanic.objects.create(
+                    quotation=quotation,
+                    mechanic=assignment.mechanic,
+                    labor_share=share
+                )
+
+        serializer = QuotationSerializer(quotation, context={'request': request})
+        return Response({
+            "detail": "Quotation created successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
