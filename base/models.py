@@ -146,3 +146,32 @@ class VehicleSolutionMechanic(models.Model):
 
     def __str__(self):
         return f"Mechanic {self.mechanic.name} assigned to solution for {self.vehicle_solution.vehicle_issue}"
+
+class Settings(models.Model):
+    """
+    Singleton model to store global application settings such as contact info,
+    branding, business hours, tax, and labor rates.
+    
+    Only one instance of this model should exist.
+    """
+    name = models.CharField(max_length=255, null=True, blank=True, help_text="Name of the business or workshop.")
+    logo = models.ImageField(upload_to='settings/logos/', null=True, blank=True, help_text="Logo image of the business.")
+    phone_number = models.CharField(max_length=20, null=True, blank=True, help_text="Primary contact phone number.")
+    email = models.EmailField(null=True, blank=True, help_text="Primary contact email address.")
+    address = models.TextField(null=True, blank=True, help_text="Physical address of the business.")
+    opening_time = models.TimeField(null=True, blank=True, help_text="Business opening time.")
+    closing_time = models.TimeField(null=True, blank=True, help_text="Business closing time.")
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, help_text="Applicable tax rate in percentage.")
+    labor_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Labor rate per hour.")
+
+    class Meta:
+        verbose_name = "Application Settings"
+        verbose_name_plural = "Application Settings"
+
+    def save(self, *args, **kwargs):
+        if not self.pk and Settings.objects.exists():
+            raise ValueError("Only one instance of Settings is allowed.")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return "Application Settings"
