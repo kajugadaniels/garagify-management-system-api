@@ -79,3 +79,17 @@ class VehicleSolutionMechanicAdmin(admin.ModelAdmin):
         return format_html(f'<a class="button" href="{edit_url}">Edit</a> <a class="button" style="color:red;" href="{delete_url}">Delete</a>')
     view_actions.short_description = 'Actions'
 
+@admin.register(Settings)
+class SettingsAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        return not Settings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    list_display = ('name', 'phone_number', 'email', 'tax_rate', 'labor_rate', 'view_actions')
+
+    def view_actions(self, obj):
+        edit_url = reverse('admin:base_settings_change', args=[obj.pk])
+        return format_html(f'<a class="button" href="{edit_url}">Edit</a>')
+    view_actions.short_description = 'Actions'
