@@ -770,6 +770,43 @@ class SettingsView(APIView):
             "errors": serializer.errors
         }, status=status.HTTP_400_BAD_REQUEST)
 
+class GetQuotationByIssueView(APIView):
+    """
+    Retrieve quotation details based on vehicle issue ID, including parts, labor, and grand totals.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, issue_id, *args, **kwargs):
+        try:
+            issue = VehicleIssue.objects.get(id=issue_id)
+        except VehicleIssue.DoesNotExist:
+            raise NotFound("Vehicle issue not found.")
+
+        if not hasattr(issue, 'solution') or not hasattr(issue.solution, 'quotation'):
+            return Response({"detail": "Quotation not found for this vehicle issue."}, status=status.HTTP_404_NOT_FOUND)
+
+        quotation = issue.solution.quotation
+        serializer = QuotationSerializer(quotation, context={'request': request})
+
+        # Compute totals
+        total_parts_cost = sum(
+            float(item.item_total) for item in quotation.quoted_items.all()
+        )
+        total_labor_cost = sum(
+            float(mech.labor_share) for mech in quotation.quoted_mechanics.all()
+        )
+        grand_total = total_parts_cost + total_labor_cost
+
+        return Response({
+            "detail": "Quotation retrieved successfully.",
+            "data": serializer.data,
+            "totals": {
+                "total_parts_cost": round(total_parts_cost, 2),
+                "total_labor_cost": round(total_labor_cost, 2),
+                "grand_total": round(grand_total, 2)
+            }
+        }, status=status.HTTP_200_OK)
+
 class CreateQuotationView(APIView):
     """
     Manually create a quotation from a vehicle issue, with fully custom mechanic shares.
@@ -849,43 +886,6 @@ class CreateQuotationView(APIView):
             "detail": "Quotation created successfully.",
             "data": serializer.data
         }, status=status.HTTP_201_CREATED)
-
-class GetQuotationByIssueView(APIView):
-    """
-    Retrieve quotation details based on vehicle issue ID, including parts, labor, and grand totals.
-    """
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, issue_id, *args, **kwargs):
-        try:
-            issue = VehicleIssue.objects.get(id=issue_id)
-        except VehicleIssue.DoesNotExist:
-            raise NotFound("Vehicle issue not found.")
-
-        if not hasattr(issue, 'solution') or not hasattr(issue.solution, 'quotation'):
-            return Response({"detail": "Quotation not found for this vehicle issue."}, status=status.HTTP_404_NOT_FOUND)
-
-        quotation = issue.solution.quotation
-        serializer = QuotationSerializer(quotation, context={'request': request})
-
-        # Compute totals
-        total_parts_cost = sum(
-            float(item.item_total) for item in quotation.quoted_items.all()
-        )
-        total_labor_cost = sum(
-            float(mech.labor_share) for mech in quotation.quoted_mechanics.all()
-        )
-        grand_total = total_parts_cost + total_labor_cost
-
-        return Response({
-            "detail": "Quotation retrieved successfully.",
-            "data": serializer.data,
-            "totals": {
-                "total_parts_cost": round(total_parts_cost, 2),
-                "total_labor_cost": round(total_labor_cost, 2),
-                "grand_total": round(grand_total, 2)
-            }
-        }, status=status.HTTP_200_OK)
 
 class GetPaymentByQuotationView(APIView):
     """

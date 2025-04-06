@@ -44,8 +44,8 @@ urlpatterns = [
 
     path('settings/', SettingsView.as_view(), name='Settings'),
 
-    path('quotation/create/<int:issue_id>/', CreateQuotationView.as_view(), name='CreateQuotation'),
     path('quotation/<int:issue_id>/', GetQuotationByIssueView.as_view(), name='GetQuotationByIssue'),
+    path('quotation/create/<int:issue_id>/', CreateQuotationView.as_view(), name='CreateQuotation'),
 
     path('quotation/<int:quotation_id>/payment/', GetPaymentByQuotationView.as_view(), name='GetPaymentByQuotation'),
     path('quotation/<int:quotation_id>/pay/', CreatePaymentView.as_view(), name='CreatePayment'),

@@ -308,6 +308,7 @@ class QuotationSerializer(serializers.ModelSerializer):
             'id',
             'vehicle_solution',
             'grand_total',
+            'payment_status',
             'quoted_items',
             'quoted_mechanics',
             'created_at',
