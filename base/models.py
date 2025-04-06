@@ -267,3 +267,46 @@ class QuotedMechanic(models.Model):
 
     def __str__(self):
         return f"{self.mechanic.name} - Labor: {self.labor_share}"
+
+class Payment(models.Model):
+    PAYMENT_METHODS = [
+        ('Cash', 'Cash'),
+        ('Mobile Money', 'Mobile Money'),
+        ('Card', 'Card'),
+        ('Bank Transfer', 'Bank Transfer'),
+    ]
+
+    quotation = models.OneToOneField(
+        Quotation,
+        on_delete=models.CASCADE,
+        related_name='payment',
+        help_text="Quotation that this payment is for."
+    )
+    amount_paid = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text="Exact amount paid."
+    )
+    payment_method = models.CharField(
+        max_length=30,
+        choices=PAYMENT_METHODS,
+        help_text="Method used to make the payment."
+    )
+    paid_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="payments",
+        help_text="User who performed the payment."
+    )
+    payment_date = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Timestamp when the payment was made."
+    )
+
+    class Meta:
+        ordering = ['-payment_date']
+        verbose_name = "Payment"
+        verbose_name_plural = "Payments"
+
+    def __str__(self):
+        return f"Payment for Quotation #{self.quotation.id} - Amount: {self.amount_paid}"
