@@ -22,3 +22,9 @@ class InventoryAdmin(admin.ModelAdmin):
     list_filter = ('item_type',)
     ordering = ('-created_at',)
 
+@admin.register(VehicleSolution)
+class VehicleSolutionAdmin(admin.ModelAdmin):
+    list_display = ('vehicle_issue', 'solution_date', 'total_cost')
+    search_fields = ('vehicle_issue__reported_issue', 'solution_description')
+    ordering = ('-solution_date',)
+
