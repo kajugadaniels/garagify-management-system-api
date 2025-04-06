@@ -202,3 +202,30 @@ class Quotation(models.Model):
 
     def __str__(self):
         return f"Quotation for {self.vehicle_solution.vehicle_issue} - Total: {self.grand_total}"
+
+class QuotedItem(models.Model):
+    """
+    Represents an inventory item included in the quotation.
+    """
+    quotation = models.ForeignKey(
+        Quotation, 
+        on_delete=models.CASCADE, 
+        related_name='quoted_items',
+        help_text="Quotation this item is part of."
+    )
+    inventory_item = models.ForeignKey(
+        Inventory, 
+        on_delete=models.PROTECT, 
+        help_text="Inventory item used."
+    )
+    quantity_used = models.PositiveIntegerField(help_text="Quantity of item used in the solution.")
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, help_text="Unit price at time of quotation.")
+    item_total = models.DecimalField(max_digits=12, decimal_places=2, help_text="Total cost (quantity * unit price).")
+
+    class Meta:
+        ordering = ['id']
+        verbose_name = "Quoted Item"
+        verbose_name_plural = "Quoted Items"
+
+    def __str__(self):
+        return f"{self.quantity_used} x {self.inventory_item.item_name}"
