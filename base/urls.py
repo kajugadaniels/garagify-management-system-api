@@ -46,6 +46,8 @@ urlpatterns = [
 
     path('quotation/create/<int:issue_id>/', CreateQuotationView.as_view(), name='CreateQuotation'),
     path('quotation/<int:issue_id>/', GetQuotationByIssueView.as_view(), name='GetQuotationByIssue'),
+
+    path('quotation/<int:quotation_id>/pay/', CreatePaymentView.as_view(), name='CreatePayment'),
 ] 
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
