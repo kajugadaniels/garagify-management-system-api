@@ -7,3 +7,11 @@ class VehicleAdmin(admin.ModelAdmin):
     search_fields = ('make', 'model', 'license_plate', 'vin')
     list_filter = ('make', 'year')
     ordering = ('-created_at',)
+
+@admin.register(VehicleIssue)
+class VehicleIssueAdmin(admin.ModelAdmin):
+    list_display = ('vehicle', 'status', 'estimated_cost', 'created_at')
+    search_fields = ('vehicle__license_plate', 'reported_issue', 'diagnosed_issue')
+    list_filter = ('status',)
+    ordering = ('-created_at',)
+
