@@ -315,9 +315,23 @@ class QuotationSerializer(serializers.ModelSerializer):
         ]
 
 class PaymentSerializer(serializers.ModelSerializer):
-    paid_by = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(role='Customer'))
+    paid_by = UserSerializer(read_only=True)  # Detailed info
+    paid_by_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(role='Customer'),
+        write_only=True,
+        source='paid_by'
+    )
 
     class Meta:
         model = Payment
-        fields = ['id', 'quotation', 'amount_paid', 'tax_rate', 'payment_method', 'paid_by', 'payment_date']
+        fields = [
+            'id',
+            'quotation',
+            'amount_paid',
+            'tax_rate',
+            'payment_method',
+            'paid_by',
+            'paid_by_id',
+            'payment_date'
+        ]
         read_only_fields = ['amount_paid', 'quotation', 'payment_date']
