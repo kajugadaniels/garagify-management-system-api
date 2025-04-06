@@ -287,6 +287,13 @@ class Payment(models.Model):
         decimal_places=2,
         help_text="Exact amount paid."
     )
+    tax_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Applied tax rate (%) at the time of payment."
+    )
     payment_method = models.CharField(
         max_length=30,
         choices=PAYMENT_METHODS,
