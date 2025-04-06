@@ -40,3 +40,14 @@ class VehicleSolutionMechanicAdmin(admin.ModelAdmin):
     search_fields = ('mechanic__name', 'vehicle_solution__vehicle_issue__reported_issue')
     ordering = ('id',)
 
+@admin.register(Settings)
+class SettingsAdmin(admin.ModelAdmin):
+    def has_add_permission(self, request):
+        # Prevent adding more than one Settings instance
+        return not Settings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        # Prevent deletion of the singleton Settings instance
+        return False
+
+    list_display = ('name', 'phone_number', 'email', 'tax_rate', 'labor_rate')
