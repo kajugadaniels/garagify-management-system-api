@@ -34,3 +34,9 @@ class SolutionItemAdmin(admin.ModelAdmin):
     search_fields = ('inventory_item__item_name',)
     ordering = ('id',)
 
+@admin.register(VehicleSolutionMechanic)
+class VehicleSolutionMechanicAdmin(admin.ModelAdmin):
+    list_display = ('vehicle_solution', 'mechanic')
+    search_fields = ('mechanic__name', 'vehicle_solution__vehicle_issue__reported_issue')
+    ordering = ('id',)
+
