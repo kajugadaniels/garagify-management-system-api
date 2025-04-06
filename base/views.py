@@ -836,3 +836,27 @@ class CreateQuotationView(APIView):
             "detail": "Quotation created successfully.",
             "data": serializer.data
         }, status=status.HTTP_201_CREATED)
+
+class GetQuotationByIssueView(APIView):
+    """
+    Retrieve quotation details based on vehicle issue ID.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, issue_id, *args, **kwargs):
+        try:
+            issue = VehicleIssue.objects.get(id=issue_id)
+        except VehicleIssue.DoesNotExist:
+            raise NotFound("Vehicle issue not found.")
+
+        if not hasattr(issue, 'solution') or not hasattr(issue.solution, 'quotation'):
+            return Response({"detail": "Quotation not found for this vehicle issue."}, status=status.HTTP_404_NOT_FOUND)
+
+        quotation = issue.solution.quotation
+        serializer = QuotationSerializer(quotation, context={'request': request})
+        return Response({
+            "detail": "Quotation retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+
