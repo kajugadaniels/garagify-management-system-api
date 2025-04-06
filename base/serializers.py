@@ -275,3 +275,8 @@ class InventorySerializer(serializers.ModelSerializer):
         except (TypeError, ValueError):
             price = 0
         return qty * price
+
+class SettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Settings
+        fields = '__all__'
