@@ -67,3 +67,15 @@ class SolutionItemAdmin(admin.ModelAdmin):
         return format_html(f'<a class="button" href="{edit_url}">Edit</a> <a class="button" style="color:red;" href="{delete_url}">Delete</a>')
     view_actions.short_description = 'Actions'
 
+@admin.register(VehicleSolutionMechanic)
+class VehicleSolutionMechanicAdmin(admin.ModelAdmin):
+    list_display = ('vehicle_solution', 'mechanic', 'view_actions')
+    search_fields = ('mechanic__name', 'vehicle_solution__vehicle_issue__reported_issue')
+    ordering = ('id',)
+
+    def view_actions(self, obj):
+        edit_url = reverse('admin:base_vehiclesolutionmechanic_change', args=[obj.pk])
+        delete_url = reverse('admin:base_vehiclesolutionmechanic_delete', args=[obj.pk])
+        return format_html(f'<a class="button" href="{edit_url}">Edit</a> <a class="button" style="color:red;" href="{delete_url}">Delete</a>')
+    view_actions.short_description = 'Actions'
+
