@@ -175,3 +175,30 @@ class Settings(models.Model):
 
     def __str__(self):
         return "Application Settings"
+
+class Quotation(models.Model):
+    """
+    Represents a financial quotation generated from a vehicle solution.
+    Includes total cost and breakdown of items and labor.
+    """
+    vehicle_solution = models.OneToOneField(
+        VehicleSolution, 
+        on_delete=models.CASCADE,
+        related_name="quotation",
+        help_text="Vehicle solution this quotation is based on."
+    )
+    grand_total = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        help_text="Total cost of the quotation including parts and labor."
+    )
+    created_at = models.DateTimeField(auto_now_add=True, help_text="Quotation generation time.")
+    updated_at = models.DateTimeField(auto_now=True, help_text="Last updated time.")
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Quotation"
+        verbose_name_plural = "Quotations"
+
+    def __str__(self):
+        return f"Quotation for {self.vehicle_solution.vehicle_issue} - Total: {self.grand_total}"
