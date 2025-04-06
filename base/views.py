@@ -772,7 +772,7 @@ class SettingsView(APIView):
 
 class CreateQuotationView(APIView):
     """
-    Create a quotation from a given vehicle issue by referencing its vehicle solution.
+    Create a quotation from a given vehicle issue with manually provided mechanic shares.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -790,7 +790,7 @@ class CreateQuotationView(APIView):
         if hasattr(solution, 'quotation'):
             return Response({"detail": "Quotation already exists for this solution."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Calculate totals
+        # Calculate items total
         item_total = 0
         quoted_items = []
         for item in solution.solution_items.all():
@@ -804,13 +804,27 @@ class CreateQuotationView(APIView):
                 "item_total": total
             })
 
+        # Receive mechanic shares from request
+        input_mechanics = request.data.get('quoted_mechanics', [])
+        if not input_mechanics:
+            return Response({"detail": "Mechanic labor shares are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        total_labor_share = sum(float(m.get('labor_share', 0)) for m in input_mechanics)
         labor_cost = float(solution.total_cost or 0)
+
+        if round(total_labor_share, 2) != round(labor_cost, 2):
+            return Response({
+                "detail": "Total labor share must equal the solution's total labor cost.",
+                "expected_labor_total": labor_cost,
+                "received_total": total_labor_share
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         grand_total = item_total + labor_cost
 
-        # Create quotation
+        # Create the quotation
         quotation = Quotation.objects.create(vehicle_solution=solution, grand_total=grand_total)
 
-        # Save item breakdowns
+        # Save items
         for item in quoted_items:
             QuotedItem.objects.create(
                 quotation=quotation,
@@ -820,16 +834,20 @@ class CreateQuotationView(APIView):
                 item_total=item["item_total"]
             )
 
-        # Share labor cost equally
-        mechanic_count = solution.mechanic_assignments.count()
-        if mechanic_count > 0:
-            share = labor_cost / mechanic_count
-            for assignment in solution.mechanic_assignments.all():
-                QuotedMechanic.objects.create(
-                    quotation=quotation,
-                    mechanic=assignment.mechanic,
-                    labor_share=share
-                )
+        # Save manually entered mechanic shares
+        for mech_data in input_mechanics:
+            try:
+                mechanic_id = mech_data['mechanic_id']
+                labor_share = float(mech_data['labor_share'])
+                mechanic = User.objects.get(id=mechanic_id, role='Mechanic')
+            except (KeyError, ValueError, User.DoesNotExist):
+                return Response({"detail": f"Invalid mechanic data provided: {mech_data}"}, status=status.HTTP_400_BAD_REQUEST)
+
+            QuotedMechanic.objects.create(
+                quotation=quotation,
+                mechanic=mechanic,
+                labor_share=labor_share
+            )
 
         serializer = QuotationSerializer(quotation, context={'request': request})
         return Response({
