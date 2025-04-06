@@ -15,3 +15,10 @@ class VehicleIssueAdmin(admin.ModelAdmin):
     list_filter = ('status',)
     ordering = ('-created_at',)
 
+@admin.register(Inventory)
+class InventoryAdmin(admin.ModelAdmin):
+    list_display = ('item_name', 'item_type', 'quantity', 'unit_price', 'created_by', 'created_at')
+    search_fields = ('item_name',)
+    list_filter = ('item_type',)
+    ordering = ('-created_at',)
+
