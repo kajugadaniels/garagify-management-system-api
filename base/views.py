@@ -705,3 +705,67 @@ class DeleteVehicleSolution(APIView):
         return Response({
             "detail": "Vehicle solution deleted successfully."
         }, status=status.HTTP_204_NO_CONTENT)
+
+class SettingsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieve the singleton settings instance.
+        """
+        settings_instance = Settings.objects.first()
+        if not settings_instance:
+            return Response({
+                "detail": "Settings not configured yet."
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = SettingsSerializer(settings_instance, context={'request': request})
+        return Response({
+            "detail": "Settings retrieved successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        """
+        Create settings only if not already set.
+        """
+        if Settings.objects.exists():
+            return Response({
+                "detail": "Settings already exist. Use PUT to update."
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = SettingsSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            settings_instance = serializer.save()
+            return Response({
+                "detail": "Settings created successfully.",
+                "data": SettingsSerializer(settings_instance).data
+            }, status=status.HTTP_201_CREATED)
+
+        return Response({
+            "detail": "Failed to create settings.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def put(self, request, *args, **kwargs):
+        """
+        Update the singleton settings instance.
+        """
+        settings_instance = Settings.objects.first()
+        if not settings_instance:
+            return Response({
+                "detail": "Settings not found. Please create first using POST."
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = SettingsSerializer(settings_instance, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            updated_settings = serializer.save()
+            return Response({
+                "detail": "Settings updated successfully.",
+                "data": SettingsSerializer(updated_settings).data
+            }, status=status.HTTP_200_OK)
+
+        return Response({
+            "detail": "Failed to update settings.",
+            "errors": serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
