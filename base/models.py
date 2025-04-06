@@ -177,10 +177,11 @@ class Settings(models.Model):
         return "Application Settings"
 
 class Quotation(models.Model):
-    """
-    Represents a financial quotation generated from a vehicle solution.
-    Includes total cost and breakdown of items and labor.
-    """
+    PAYMENT_STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Paid', 'Paid'),
+    ]
+
     vehicle_solution = models.OneToOneField(
         VehicleSolution, 
         on_delete=models.CASCADE,
@@ -191,6 +192,12 @@ class Quotation(models.Model):
         max_digits=12, 
         decimal_places=2, 
         help_text="Total cost of the quotation including parts and labor."
+    )
+    payment_status = models.CharField(
+        max_length=10,
+        choices=PAYMENT_STATUS_CHOICES,
+        default='Pending',
+        help_text="Payment status for this quotation."
     )
     created_at = models.DateTimeField(auto_now_add=True, help_text="Quotation generation time.")
     updated_at = models.DateTimeField(auto_now=True, help_text="Last updated time.")
