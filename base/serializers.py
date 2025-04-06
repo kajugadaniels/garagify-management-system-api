@@ -282,24 +282,34 @@ class SettingsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class QuotedItemSerializer(serializers.ModelSerializer):
-    inventory_item_name = serializers.CharField(source='inventory_item.item_name', read_only=True)
+    inventory_item = serializers.StringRelatedField()
 
     class Meta:
         model = QuotedItem
-        fields = ['id', 'inventory_item', 'inventory_item_name', 'quantity_used', 'unit_price', 'item_total']
+        fields = ['id', 'inventory_item', 'quantity_used', 'unit_price', 'item_total']
+
 
 class QuotedMechanicSerializer(serializers.ModelSerializer):
-    mechanic_name = serializers.CharField(source='mechanic.name', read_only=True)
+    mechanic = UserSerializer(read_only=True)
 
     class Meta:
         model = QuotedMechanic
-        fields = ['id', 'mechanic', 'mechanic_name', 'labor_share']
+        fields = ['id', 'mechanic', 'labor_share']
+
 
 class QuotationSerializer(serializers.ModelSerializer):
+    vehicle_solution = serializers.PrimaryKeyRelatedField(read_only=True)
     quoted_items = QuotedItemSerializer(many=True, read_only=True)
     quoted_mechanics = QuotedMechanicSerializer(many=True, read_only=True)
-    vehicle_solution_id = serializers.IntegerField(source='vehicle_solution.id', read_only=True)
 
     class Meta:
         model = Quotation
-        fields = ['id', 'vehicle_solution_id', 'grand_total', 'quoted_items', 'quoted_mechanics', 'created_at', 'updated_at']
+        fields = [
+            'id',
+            'vehicle_solution',
+            'grand_total',
+            'quoted_items',
+            'quoted_mechanics',
+            'created_at',
+            'updated_at',
+        ]
