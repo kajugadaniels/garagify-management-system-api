@@ -852,7 +852,7 @@ class CreateQuotationView(APIView):
 
 class GetQuotationByIssueView(APIView):
     """
-    Retrieve quotation details based on vehicle issue ID.
+    Retrieve quotation details based on vehicle issue ID, including parts, labor, and grand totals.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -867,9 +867,22 @@ class GetQuotationByIssueView(APIView):
 
         quotation = issue.solution.quotation
         serializer = QuotationSerializer(quotation, context={'request': request})
+
+        # Compute totals
+        total_parts_cost = sum(
+            float(item.item_total) for item in quotation.quoted_items.all()
+        )
+        total_labor_cost = sum(
+            float(mech.labor_share) for mech in quotation.quoted_mechanics.all()
+        )
+        grand_total = total_parts_cost + total_labor_cost
+
         return Response({
             "detail": "Quotation retrieved successfully.",
-            "data": serializer.data
+            "data": serializer.data,
+            "totals": {
+                "total_parts_cost": round(total_parts_cost, 2),
+                "total_labor_cost": round(total_labor_cost, 2),
+                "grand_total": round(grand_total, 2)
+            }
         }, status=status.HTTP_200_OK)
-
-
