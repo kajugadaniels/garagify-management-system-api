@@ -886,3 +886,56 @@ class GetQuotationByIssueView(APIView):
                 "grand_total": round(grand_total, 2)
             }
         }, status=status.HTTP_200_OK)
+
+class CreatePaymentView(APIView):
+    """
+    Create a payment for a specific quotation, including tax rate.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, quotation_id, *args, **kwargs):
+        try:
+            quotation = Quotation.objects.get(id=quotation_id)
+        except Quotation.DoesNotExist:
+            return Response({"detail": "Quotation not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if quotation.payment_status == 'Paid':
+            return Response({"detail": "This quotation has already been paid."}, status=status.HTTP_400_BAD_REQUEST)
+
+        tax_rate = request.data.get('tax_rate')
+        payment_method = request.data.get('payment_method')
+        paid_by_id = request.data.get('paid_by')
+
+        if not tax_rate or not payment_method or not paid_by_id:
+            return Response({"detail": "tax_rate, payment_method, and paid_by are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            tax_rate = float(tax_rate)
+            tax_amount = (tax_rate / 100.0) * float(quotation.grand_total)
+            amount_paid = float(quotation.grand_total) + tax_amount
+        except ValueError:
+            return Response({"detail": "Invalid tax_rate value."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=paid_by_id, role='Customer')
+        except User.DoesNotExist:
+            return Response({"detail": "Paid_by must be a valid customer."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create the payment
+        payment = Payment.objects.create(
+            quotation=quotation,
+            amount_paid=amount_paid,
+            tax_rate=tax_rate,
+            payment_method=payment_method,
+            paid_by=user
+        )
+
+        # Update quotation status
+        quotation.payment_status = 'Paid'
+        quotation.save()
+
+        serializer = PaymentSerializer(payment, context={'request': request})
+        return Response({
+            "detail": "Payment successful.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
