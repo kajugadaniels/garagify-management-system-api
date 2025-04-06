@@ -229,3 +229,34 @@ class QuotedItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity_used} x {self.inventory_item.item_name}"
+
+class QuotedMechanic(models.Model):
+    """
+    Represents a mechanic's contribution and share of labor in the quotation.
+    """
+    quotation = models.ForeignKey(
+        Quotation, 
+        on_delete=models.CASCADE, 
+        related_name='quoted_mechanics',
+        help_text="Quotation this mechanic is part of."
+    )
+    mechanic = models.ForeignKey(
+        User, 
+        on_delete=models.PROTECT,
+        limit_choices_to={'role': 'Mechanic'},
+        help_text="Mechanic assigned to the solution."
+    )
+    labor_share = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        help_text="Calculated labor compensation for this mechanic."
+    )
+
+    class Meta:
+        ordering = ['id']
+        verbose_name = "Quoted Mechanic"
+        verbose_name_plural = "Quoted Mechanics"
+        unique_together = ('quotation', 'mechanic')
+
+    def __str__(self):
+        return f"{self.mechanic.name} - Labor: {self.labor_share}"
