@@ -772,25 +772,30 @@ class SettingsView(APIView):
 
 class CreateQuotationView(APIView):
     """
-    Create a quotation from a given vehicle issue with manually provided mechanic shares.
+    Manually create a quotation from a vehicle issue, with fully custom mechanic shares.
     """
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, issue_id, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
+        vehicle_issue_id = request.data.get('vehicle_issue_id')
+
+        if not vehicle_issue_id:
+            return Response({"detail": "vehicle_issue_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
-            issue = VehicleIssue.objects.get(id=issue_id)
+            issue = VehicleIssue.objects.get(id=vehicle_issue_id)
         except VehicleIssue.DoesNotExist:
-            raise NotFound("Vehicle issue not found.")
+            return Response({"detail": "Vehicle issue not found."}, status=status.HTTP_404_NOT_FOUND)
 
         if not hasattr(issue, 'solution'):
-            return Response({"detail": "No solution found for this vehicle issue."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "No solution exists for this vehicle issue."}, status=status.HTTP_400_BAD_REQUEST)
 
         solution = issue.solution
 
         if hasattr(solution, 'quotation'):
             return Response({"detail": "Quotation already exists for this solution."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Calculate items total
+        # Calculate parts total from solution_items
         item_total = 0
         quoted_items = []
         for item in solution.solution_items.all():
@@ -804,27 +809,17 @@ class CreateQuotationView(APIView):
                 "item_total": total
             })
 
-        # Receive mechanic shares from request
+        # Use user-provided mechanic shares directly
         input_mechanics = request.data.get('quoted_mechanics', [])
         if not input_mechanics:
-            return Response({"detail": "Mechanic labor shares are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "quoted_mechanics is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        total_labor_share = sum(float(m.get('labor_share', 0)) for m in input_mechanics)
-        labor_cost = float(solution.total_cost or 0)
+        grand_total = item_total + sum(float(m.get('labor_share', 0)) for m in input_mechanics)
 
-        if round(total_labor_share, 2) != round(labor_cost, 2):
-            return Response({
-                "detail": "Total labor share must equal the solution's total labor cost.",
-                "expected_labor_total": labor_cost,
-                "received_total": total_labor_share
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        grand_total = item_total + labor_cost
-
-        # Create the quotation
+        # Create quotation
         quotation = Quotation.objects.create(vehicle_solution=solution, grand_total=grand_total)
 
-        # Save items
+        # Save item breakdowns
         for item in quoted_items:
             QuotedItem.objects.create(
                 quotation=quotation,
@@ -834,14 +829,14 @@ class CreateQuotationView(APIView):
                 item_total=item["item_total"]
             )
 
-        # Save manually entered mechanic shares
+        # Save custom mechanic labor shares
         for mech_data in input_mechanics:
             try:
                 mechanic_id = mech_data['mechanic_id']
                 labor_share = float(mech_data['labor_share'])
                 mechanic = User.objects.get(id=mechanic_id, role='Mechanic')
             except (KeyError, ValueError, User.DoesNotExist):
-                return Response({"detail": f"Invalid mechanic data provided: {mech_data}"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"detail": f"Invalid mechanic data: {mech_data}"}, status=status.HTTP_400_BAD_REQUEST)
 
             QuotedMechanic.objects.create(
                 quotation=quotation,
