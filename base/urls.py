@@ -43,6 +43,9 @@ urlpatterns = [
     path('vehicle-solution/<int:pk>/delete/', DeleteVehicleSolution.as_view(), name='DeleteVehicleSolution'),
 
     path('settings/', SettingsView.as_view(), name='Settings'),
+
+    path('quotation/create/<int:issue_id>/', CreateQuotationView.as_view(), name='CreateQuotation'),
+    path('quotation/<int:issue_id>/', GetQuotationByIssueView.as_view(), name='GetQuotationByIssue'),
 ] 
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
