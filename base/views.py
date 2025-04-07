@@ -807,6 +807,73 @@ class GetQuotationBySolutionView(APIView):
             }
         }, status=status.HTTP_200_OK)
 
+class CreateQuotationFromSolutionView(APIView):
+    """
+    Create a quotation directly from a VehicleSolution, with custom mechanic shares.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, solution_id, *args, **kwargs):
+        try:
+            solution = VehicleSolution.objects.get(id=solution_id)
+        except VehicleSolution.DoesNotExist:
+            return Response({"detail": "Vehicle solution not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        if hasattr(solution, 'quotation'):
+            return Response({"detail": "Quotation already exists for this solution."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Calculate parts total
+        item_total = 0
+        quoted_items = []
+        for item in solution.solution_items.all():
+            unit_price = float(item.inventory_item.unit_price or 0)
+            total = unit_price * item.quantity_used
+            item_total += total
+            quoted_items.append({
+                "inventory_item": item.inventory_item,
+                "quantity_used": item.quantity_used,
+                "unit_price": unit_price,
+                "item_total": total
+            })
+
+        # Custom mechanic shares
+        input_mechanics = request.data.get('quoted_mechanics', [])
+        if not input_mechanics:
+            return Response({"detail": "quoted_mechanics is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        grand_total = item_total + sum(float(m.get('labor_share', 0)) for m in input_mechanics)
+
+        quotation = Quotation.objects.create(vehicle_solution=solution, grand_total=grand_total)
+
+        for item in quoted_items:
+            QuotedItem.objects.create(
+                quotation=quotation,
+                inventory_item=item["inventory_item"],
+                quantity_used=item["quantity_used"],
+                unit_price=item["unit_price"],
+                item_total=item["item_total"]
+            )
+
+        for mech_data in input_mechanics:
+            try:
+                mechanic_id = mech_data['mechanic_id']
+                labor_share = float(mech_data['labor_share'])
+                mechanic = User.objects.get(id=mechanic_id, role='Mechanic')
+            except (KeyError, ValueError, User.DoesNotExist):
+                return Response({"detail": f"Invalid mechanic data: {mech_data}"}, status=status.HTTP_400_BAD_REQUEST)
+
+            QuotedMechanic.objects.create(
+                quotation=quotation,
+                mechanic=mechanic,
+                labor_share=labor_share
+            )
+
+        serializer = QuotationSerializer(quotation, context={'request': request})
+        return Response({
+            "detail": "Quotation created successfully.",
+            "data": serializer.data
+        }, status=status.HTTP_201_CREATED)
+
 class GetPaymentByQuotationView(APIView):
     """
     Retrieve payment details for a specific quotation.
