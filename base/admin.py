@@ -118,3 +118,15 @@ class QuotedItemAdmin(admin.ModelAdmin):
         delete_url = reverse('admin:base_quoteditem_delete', args=[obj.pk])
         return format_html(f'<a class="button" href="{edit_url}">Edit</a> <a class="button" style="color:red;" href="{delete_url}">Delete</a>')
     view_actions.short_description = 'Actions'
+
+@admin.register(QuotedMechanic)
+class QuotedMechanicAdmin(admin.ModelAdmin):
+    list_display = ('quotation', 'mechanic', 'labor_share', 'view_actions')
+    search_fields = ('mechanic__name',)
+    ordering = ('id',)
+
+    def view_actions(self, obj):
+        edit_url = reverse('admin:base_quotedmechanic_change', args=[obj.pk])
+        delete_url = reverse('admin:base_quotedmechanic_delete', args=[obj.pk])
+        return format_html(f'<a class="button" href="{edit_url}">Edit</a> <a class="button" style="color:red;" href="{delete_url}">Delete</a>')
+    view_actions.short_description = 'Actions'
