@@ -130,3 +130,16 @@ class QuotedMechanicAdmin(admin.ModelAdmin):
         delete_url = reverse('admin:base_quotedmechanic_delete', args=[obj.pk])
         return format_html(f'<a class="button" href="{edit_url}">Edit</a> <a class="button" style="color:red;" href="{delete_url}">Delete</a>')
     view_actions.short_description = 'Actions'
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ('quotation', 'amount_paid', 'tax_rate', 'payment_method', 'paid_by', 'payment_date', 'view_actions')
+    search_fields = ('paid_by__name', 'quotation__vehicle_solution__vehicle_issue__reported_issue')
+    list_filter = ('payment_method',)
+    ordering = ('-payment_date',)
+
+    def view_actions(self, obj):
+        edit_url = reverse('admin:base_payment_change', args=[obj.pk])
+        delete_url = reverse('admin:base_payment_delete', args=[obj.pk])
+        return format_html(f'<a class="button" href="{edit_url}">Edit</a> <a class="button" style="color:red;" href="{delete_url}">Delete</a>')
+    view_actions.short_description = 'Actions'
