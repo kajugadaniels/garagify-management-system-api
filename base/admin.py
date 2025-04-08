@@ -93,3 +93,16 @@ class SettingsAdmin(admin.ModelAdmin):
         edit_url = reverse('admin:base_settings_change', args=[obj.pk])
         return format_html(f'<a class="button" href="{edit_url}">Edit</a>')
     view_actions.short_description = 'Actions'
+
+@admin.register(Quotation)
+class QuotationAdmin(admin.ModelAdmin):
+    list_display = ('vehicle_solution', 'grand_total', 'payment_status', 'created_at', 'view_actions')
+    search_fields = ('vehicle_solution__vehicle_issue__reported_issue',)
+    list_filter = ('payment_status',)
+    ordering = ('-created_at',)
+
+    def view_actions(self, obj):
+        edit_url = reverse('admin:base_quotation_change', args=[obj.pk])
+        delete_url = reverse('admin:base_quotation_delete', args=[obj.pk])
+        return format_html(f'<a class="button" href="{edit_url}">Edit</a> <a class="button" style="color:red;" href="{delete_url}">Delete</a>')
+    view_actions.short_description = 'Actions'
