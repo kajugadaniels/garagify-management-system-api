@@ -105,11 +105,11 @@ else:
     DATABASES =  {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv("MYSQL_DB", "garagify"),
-        'USER': os.getenv("MYSQL_USER", "root"),
+        'NAME': os.getenv("MYSQL_DB", ""),
+        'USER': os.getenv("MYSQL_USER", ""),
         'PASSWORD': os.getenv("MYSQL_PASSWORD", ""),
-        'HOST': os.getenv("MYSQL_HOST", "localhost"),
-        'PORT': os.getenv("MYSQL_PORT", "3306"),
+        'HOST': os.getenv("MYSQL_HOST", ""),
+        'PORT': os.getenv("MYSQL_PORT", ""),
     }
 }
 
