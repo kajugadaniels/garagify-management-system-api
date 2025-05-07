@@ -809,56 +809,63 @@ class GetQuotationBySolutionView(APIView):
 
 class CreateQuotationFromSolutionView(APIView):
     """
-    Create a quotation directly from a VehicleSolution, with custom mechanic shares.
+    Create a quotation directly from a VehicleSolution, with custom mechanic shares,
+    and automatically email the customer a detailed quotation.
     """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, solution_id, *args, **kwargs):
+        # Fetch the solution
         try:
             solution = VehicleSolution.objects.get(id=solution_id)
         except VehicleSolution.DoesNotExist:
             return Response({"detail": "Vehicle solution not found."}, status=status.HTTP_404_NOT_FOUND)
 
+        # Prevent duplicate quotations
         if hasattr(solution, 'quotation'):
             return Response({"detail": "Quotation already exists for this solution."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Calculate parts total
+        # Calculate parts total and prepare quoted items data
         item_total = 0
-        quoted_items = []
+        quoted_items_data = []
         for item in solution.solution_items.all():
             unit_price = float(item.inventory_item.unit_price or 0)
             total = unit_price * item.quantity_used
             item_total += total
-            quoted_items.append({
+            quoted_items_data.append({
                 "inventory_item": item.inventory_item,
                 "quantity_used": item.quantity_used,
                 "unit_price": unit_price,
                 "item_total": total
             })
 
-        # Custom mechanic shares
+        # Validate mechanics input
         input_mechanics = request.data.get('quoted_mechanics', [])
         if not input_mechanics:
             return Response({"detail": "quoted_mechanics is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        grand_total = item_total + sum(float(m.get('labor_share', 0)) for m in input_mechanics)
+        # Compute grand total
+        total_labor = sum(float(m.get('labor_share', 0)) for m in input_mechanics)
+        grand_total = item_total + total_labor
 
+        # Create the quotation record
         quotation = Quotation.objects.create(vehicle_solution=solution, grand_total=grand_total)
 
-        for item in quoted_items:
+        # Persist quoted items
+        for qi in quoted_items_data:
             QuotedItem.objects.create(
                 quotation=quotation,
-                inventory_item=item["inventory_item"],
-                quantity_used=item["quantity_used"],
-                unit_price=item["unit_price"],
-                item_total=item["item_total"]
+                inventory_item=qi["inventory_item"],
+                quantity_used=qi["quantity_used"],
+                unit_price=qi["unit_price"],
+                item_total=qi["item_total"]
             )
 
+        # Persist quoted mechanics
         for mech_data in input_mechanics:
             try:
-                mechanic_id = mech_data['mechanic_id']
+                mechanic = User.objects.get(id=mech_data['mechanic_id'], role='Mechanic')
                 labor_share = float(mech_data['labor_share'])
-                mechanic = User.objects.get(id=mechanic_id, role='Mechanic')
             except (KeyError, ValueError, User.DoesNotExist):
                 return Response({"detail": f"Invalid mechanic data: {mech_data}"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -867,6 +874,50 @@ class CreateQuotationFromSolutionView(APIView):
                 mechanic=mechanic,
                 labor_share=labor_share
             )
+
+        # --- NEW EMAIL NOTIFICATION LOGIC ---
+        customer = solution.vehicle_issue.vehicle.customer
+        subject = f"Your Quotation is Ready – Vehicle {solution.vehicle_issue.vehicle.license_plate}"
+        body_lines = [
+            f"Dear {customer.name},",
+            "",
+            "Thank you for entrusting us with your vehicle. Your detailed quotation is now available:",
+            "",
+            "— Parts & Materials —"
+        ]
+        for qi in quotation.quoted_items.all():
+            body_lines.append(
+                f"• {qi.inventory_item.item_name}: {qi.quantity_used} × {qi.unit_price:.2f} = {qi.item_total:.2f}"
+            )
+        body_lines += [
+            "",
+            "— Labor Breakdown —"
+        ]
+        for qm in quotation.quoted_mechanics.all():
+            body_lines.append(
+                f"• {qm.mechanic.name}: labor share = {qm.labor_share:.2f}"
+            )
+        body_lines += [
+            "",
+            f"Total Parts Cost: {item_total:.2f}",
+            f"Total Labor Cost: {total_labor:.2f}",
+            f"Grand Total (before tax): {grand_total:.2f}",
+            "",
+            "Please let us know when you would like to proceed, or if you have any questions.",
+            "",
+            "Best regards,",
+            f"{settings.DEFAULT_FROM_EMAIL}"
+        ]
+        body = "\n".join(body_lines)
+
+        send_mail(
+            subject,
+            body,
+            settings.DEFAULT_FROM_EMAIL,
+            [customer.email],
+            fail_silently=False,
+        )
+        # --- END EMAIL LOGIC ---
 
         serializer = QuotationSerializer(quotation, context={'request': request})
         return Response({
